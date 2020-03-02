@@ -1,0 +1,65 @@
+{
+    "metadata": {
+        "min_tradable_amount": 10000,
+        "numberFormat": "int128",
+        "interfaceVersion": "smartcontract",
+        "opt_roots": [
+            5
+        ]
+    },
+    "tokens": [
+        "token0",
+        "token1"
+    ],
+    "fee": {
+        "token": "token0",
+        "ratio": 0.001
+    },
+    "objVals": {
+        "volume": "293533441274832593716910222258912",
+        "utility": "10691664342605616382768250078",
+        "utility_disreg": "14574300843023478476417231749922",
+        "utility_disreg_touched": "14574300843023478476417231749922",
+        "fees": "293533441274",
+        "orders_touched": "2"
+    },
+    "pricesPrev": {},
+    "prices": {
+        "token0": "1000000000000000000",
+        "token1": "500018731584789768"
+    },
+    "accounts": {
+        "A": {
+            "token0": "15000000000000000000",
+            "token1": "15000000000000000000"
+        },
+        "B": {
+            "token0": "15000000000000000000",
+            "token1": "15000000000000000000"
+        }
+    },
+    "orders": [
+        {
+            "accountID": "A",
+            "sellToken": "token1",
+            "buyToken": "token0",
+            "sellAmount": "400400000000000000",
+            "buyAmount": "200000000000000000",
+            "pi": "~2",
+            "ID": "1",
+            "execSellAmount": "293375610353884",
+            "execBuyAmount": "146546607266496"
+        },
+        {
+            "accountID": "B",
+            "sellToken": "token0",
+            "buyToken": "token1",
+            "sellAmount": "200215000000000000",
+            "buyAmount": "400000000000000000",
+            "1/pi": "~2",
+            "ID": "0",
+            "execSellAmount": "146840140707770",
+            "execBuyAmount": "293375610353884"
+        }
+    ]
+}

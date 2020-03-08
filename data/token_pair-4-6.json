@@ -1,0 +1,134 @@
+{
+    "metadata": {
+        "description": "Randomly generated instance (subtractive), with 2 tokens and 10 orders.",
+        "interfaceVersion": "smartcontract",
+        "numberFormat": "int128",
+        "timestamp": 1583515224
+    },
+    "tokens": [
+        "token1",
+        "token0"
+    ],
+    "fee": {
+        "ratio": 0.001,
+        "token": "token0"
+    },
+    "pricesPrev": {
+        "token1": "1129782202900000000",
+        "token0": "17630000000000000000"
+    },
+    "accounts": {
+        "0x0c01": {
+            "token1": "417027049308000000000000",
+            "token0": "91000000000000000"
+        },
+        "0x1d6e": {
+            "token1": "604238322919000000000000"
+        },
+        "0x244a": {
+            "token1": "322149522666000000000000",
+            "token0": "41146000000000000000"
+        },
+        "0x3ddc": {
+            "token1": "378040739531000000000000",
+            "token0": "4681000000000000000"
+        },
+        "0x8c03": {
+            "token1": "459380627086000000000000",
+            "token0": "18035000000000000000"
+        },
+        "0x8fd7": {
+            "token1": "350862511041000000000000",
+            "token0": "83826000000000000000"
+        },
+        "0xc22f": {
+            "token1": "494642337210000000000000"
+        },
+        "0xc8f9": {
+            "token1": "609945589084000000000000",
+            "token0": "22025000000000000000"
+        }
+    },
+    "orders": [
+        {
+            "ID": "0d806e8f4b",
+            "accountID": "0xc22f",
+            "sellToken": "token1",
+            "buyToken": "token0",
+            "sellAmount": "154429000000000000000",
+            "buyAmount": "10000000000000000000"
+        },
+        {
+            "ID": "21d988a0d4",
+            "accountID": "0xc8f9",
+            "sellToken": "token1",
+            "buyToken": "token0",
+            "sellAmount": "507811678000000000000",
+            "buyAmount": "32775999974182555152"
+        },
+        {
+            "ID": "2ed35bc347",
+            "accountID": "0x3ddc",
+            "sellToken": "token0",
+            "buyToken": "token1",
+            "sellAmount": "21000000000000000",
+            "buyAmount": "327267326732673180"
+        },
+        {
+            "ID": "55c1be8267",
+            "accountID": "0x244a",
+            "sellToken": "token0",
+            "buyToken": "token1",
+            "sellAmount": "23111000000000000000",
+            "buyAmount": "360851950495049415710"
+        },
+        {
+            "ID": "568ef765dc",
+            "accountID": "0xc8f9",
+            "sellToken": "token0",
+            "buyToken": "token1",
+            "sellAmount": "22025000000000000000",
+            "buyAmount": "340624257425742456500"
+        },
+        {
+            "ID": "69ed30dcd2",
+            "accountID": "0x0c01",
+            "sellToken": "token1",
+            "buyToken": "token0",
+            "sellAmount": "74505175000000000000",
+            "buyAmount": "4750000000000000000"
+        },
+        {
+            "ID": "7cc84dae40",
+            "accountID": "0x8c03",
+            "sellToken": "token0",
+            "buyToken": "token1",
+            "sellAmount": "18035000000000000000",
+            "buyAmount": "279810346534653558200"
+        },
+        {
+            "ID": "95e77a42b2",
+            "accountID": "0xc8f9",
+            "sellToken": "token1",
+            "buyToken": "token0",
+            "sellAmount": "428450242000000000000",
+            "buyAmount": "27333000025518015719"
+        },
+        {
+            "ID": "b4bf47588b",
+            "accountID": "0x1d6e",
+            "sellToken": "token1",
+            "buyToken": "token0",
+            "sellAmount": "456961269000000000000",
+            "buyAmount": "29265000000000000000"
+        },
+        {
+            "ID": "f28d1e65b7",
+            "accountID": "0x8fd7",
+            "sellToken": "token1",
+            "buyToken": "token0",
+            "sellAmount": "641171109000000000000",
+            "buyAmount": "41546000012959411124"
+        }
+    ]
+}

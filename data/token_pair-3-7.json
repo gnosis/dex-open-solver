@@ -1,0 +1,173 @@
+{
+    "metadata": {
+        "description": "Randomly generated instance (subtractive), with 2 tokens and 10 orders.",
+        "interfaceVersion": "smartcontract",
+        "numberFormat": "int128",
+        "timestamp": 1583514919,
+        "min_tradable_amount": 10000
+    },
+    "tokens": [
+        "token0",
+        "token1"
+    ],
+    "fee": {
+        "ratio": 0.001,
+        "token": "token0"
+    },
+    "objVals": {
+        "volume": "98888471030730074927788261993591194798",
+        "utility": "3869168516074154461013183210206329815",
+        "utility_disreg": "8230209972261797293965160557630425",
+        "utility_disreg_touched": "8230209972261797293965160557630425",
+        "fees": "98888471030730073",
+        "orders_touched": "5"
+    },
+    "pricesPrev": {
+        "token1": "1130253984100000000",
+        "token0": "17490000000000000000"
+    },
+    "prices": {
+        "token0": "1000000000000000000",
+        "token1": "61813097532160074"
+    },
+    "accounts": {
+        "0x1f9d": {
+            "token1": "553702464000000000000"
+        },
+        "0x2ee2": {
+            "token1": "526228070000000000000",
+            "token0": "91000000000000000"
+        },
+        "0x3768": {
+            "token1": "498389062000000000000"
+        },
+        "0x506d": {
+            "token1": "518140665000000000000"
+        },
+        "0x7810": {
+            "token1": "533443071000000000000",
+            "token0": "18035000000000000000"
+        },
+        "0x8812": {
+            "token1": "245473200000000000000"
+        },
+        "0xd08c": {
+            "token0": "31343000000000000000"
+        },
+        "0xd8db": {
+            "token1": "103112782000000000000"
+        }
+    },
+    "orders": [
+        {
+            "ID": "4d3290b7b1",
+            "accountID": "0x2ee2",
+            "sellToken": "token1",
+            "buyToken": "token0",
+            "sellAmount": "526228070000000000000",
+            "buyAmount": "32607000030981813675",
+            "pi": "16.1385",
+            "execSellAmount": "0",
+            "execBuyAmount": "0"
+        },
+        {
+            "ID": "0a75417aca",
+            "accountID": "0x7810",
+            "sellToken": "token1",
+            "buyToken": "token0",
+            "sellAmount": "533443071000000000000",
+            "buyAmount": "32798000000000000000",
+            "pi": "16.2645",
+            "execSellAmount": "533442912285088028856",
+            "execBuyAmount": "32940785006152740000"
+        },
+        {
+            "ID": "8d78a8a470",
+            "accountID": "0x1f9d",
+            "sellToken": "token1",
+            "buyToken": "token0",
+            "sellAmount": "553702464000000000000",
+            "buyAmount": "34176000000000000000",
+            "pi": "16.2015",
+            "execSellAmount": "266055948043872388371",
+            "execBuyAmount": "16429296523181750000"
+        },
+        {
+            "ID": "af76e1e9c3",
+            "accountID": "0x506d",
+            "sellToken": "token1",
+            "buyToken": "token0",
+            "sellAmount": "518140665000000000000",
+            "buyAmount": "32085000000000000000",
+            "pi": "16.149",
+            "execSellAmount": "0",
+            "execBuyAmount": "0"
+        },
+        {
+            "ID": "1b08e62c83",
+            "accountID": "0x8812",
+            "sellToken": "token1",
+            "buyToken": "token0",
+            "sellAmount": "245473200000000000000",
+            "buyAmount": "15300000000000000000",
+            "pi": "16.044",
+            "execSellAmount": "0",
+            "execBuyAmount": "0"
+        },
+        {
+            "ID": "1ec00cd03f",
+            "accountID": "0x3768",
+            "sellToken": "token1",
+            "buyToken": "token0",
+            "sellAmount": "498389062000000000000",
+            "buyAmount": "31124999968774395003",
+            "pi": "16.0125",
+            "execSellAmount": "0",
+            "execBuyAmount": "0"
+        },
+        {
+            "ID": "1f13d6a95e",
+            "accountID": "0xd8db",
+            "sellToken": "token1",
+            "buyToken": "token0",
+            "sellAmount": "103112782000000000000",
+            "buyAmount": "6684999967584038380",
+            "pi": "15.4245",
+            "execSellAmount": "0",
+            "execBuyAmount": "0"
+        },
+        {
+            "ID": "46b06db9a8",
+            "accountID": "0x2ee2",
+            "sellToken": "token0",
+            "buyToken": "token1",
+            "sellAmount": "91000000000000000",
+            "buyAmount": "1371066666666666970",
+            "1/pi": "15.0(6)",
+            "execSellAmount": "90989998846180299",
+            "execBuyAmount": "1470546089363039092"
+        },
+        {
+            "ID": "9fe54f7558",
+            "accountID": "0xd08c",
+            "sellToken": "token0",
+            "buyToken": "token1",
+            "sellAmount": "31343000000000000000",
+            "buyAmount": "469846495238095223170",
+            "1/pi": "14.99",
+            "execSellAmount": "31342990001519032521",
+            "execBuyAmount": "506553598858667651541"
+        },
+        {
+            "ID": "2bb32082b5",
+            "accountID": "0x7810",
+            "sellToken": "token0",
+            "buyToken": "token1",
+            "sellAmount": "18035000000000000000",
+            "buyAmount": "268120333333333213100",
+            "1/pi": "14.8(6)",
+            "execSellAmount": "18034990000000007253",
+            "execBuyAmount": "291474715380929726594"
+        }
+    ]
+}

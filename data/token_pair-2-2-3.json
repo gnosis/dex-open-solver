@@ -1,0 +1,91 @@
+{
+    "metadata": {
+        "min_tradable_amount": 10000,
+        "numberFormat": "int128",
+        "interfaceVersion": "smartcontract",
+        "opt_roots": [
+            2
+        ]
+    },
+    "tokens": [
+        "token0",
+        "token1"
+    ],
+    "fee": {
+        "token": "token0",
+        "ratio": 0.001
+    },
+    "objVals": {
+        "volume": "5597123343506167755794952094185022596",
+        "utility": "3393171599424497349162953625657493132",
+        "utility_disreg": "31214561340828247446374342506868",
+        "utility_disreg_touched": "31214561340828247446374342506868",
+        "fees": "5597123343506164",
+        "orders_touched": "4"
+    },
+    "pricesPrev": {},
+    "prices": {
+        "token0": "1000000000000000000",
+        "token1": "1997990010115587564"
+    },
+    "accounts": {
+        "A": {
+            "token0": "15000000000000000000",
+            "token1": "15000000000000000000"
+        },
+        "B": {
+            "token0": "15000000000000000000",
+            "token1": "15000000000000000000"
+        },
+        "C": {
+            "token0": "15000000000000000000",
+            "token1": "15000000000000000000"
+        },
+        "D": {
+            "token0": "15000000000000000000",
+            "token1": "15000000000000000000"
+        }
+    },
+    "orders": [
+        {
+            "accountID": "A",
+            "sellToken": "token1",
+            "buyToken": "token0",
+            "sellAmount": "6000000000000000000",
+            "buyAmount":   "600000000000000000",
+            "_pi": "10",
+            "execSellAmount": "599993913095652133",
+            "execBuyAmount": "1197583062650777700"
+        },
+        {
+            "accountID": "C",
+            "sellToken": "token0",
+            "buyToken": "token1",
+            "sellAmount": "10000000000000000000",
+            "buyAmount":  "90000000000000000000",
+            "1/pi": "9",
+            "execSellAmount": "799971652578298412",
+            "execBuyAmount": "399987826205140283"
+        },
+        {
+            "accountID": "B",
+            "sellToken": "token1",
+            "buyToken": "token0",
+            "sellAmount": "10000000000000000",
+            "buyAmount":  "90000000000000000",
+            "pi": "1/9",
+            "execSellAmount": "799993913052173806",
+            "execBuyAmount": "1596781466585089700"
+        },
+        {
+            "accountID": "D",
+            "sellToken": "token0",
+            "buyToken": "token1",
+            "sellAmount": "6000000000000000",
+            "buyAmount":   "600000000000000",
+            "1/pi": "1/10",
+            "execSellAmount": "1999990000001075152",
+            "execBuyAmount": "999999999942685656"
+        }
+    ]
+}

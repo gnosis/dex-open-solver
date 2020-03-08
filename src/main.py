@@ -22,7 +22,7 @@ def main(instance, token_pair, b_buy_token_price, xrate=None):
         if order["buyToken"] == s_buy_token and order["sellToken"] == b_buy_token
     ]
 
-    fee_ratio = F(0)    # TODO:  fee is not working yet
+    fee_ratio = F(1, 1000)    # TODO:  fee is not working yet
 
     if xrate is None:
         xrate, _ = find_best_xrate(b_orders, s_orders, fee_ratio)
@@ -38,7 +38,8 @@ def main(instance, token_pair, b_buy_token_price, xrate=None):
         b_buy_amounts,
         s_buy_amounts,
         b_buy_token_price=b_buy_token_price,
-        s_buy_token_price=b_buy_token_price / xrate
+        s_buy_token_price=b_buy_token_price / xrate,
+        fee_ratio=fee_ratio
     )
 
     def fraction_list_as_str(lst):

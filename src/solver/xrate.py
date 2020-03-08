@@ -21,16 +21,17 @@ from fractions import Fraction as F
 logger = logging.getLogger(__name__)
 
 
-def xrate_interval_iterator(b_orders, s_orders):
+def xrate_interval_iterator(b_orders, s_orders, fee_ratio):
     assert len(b_orders) > 0 and len(s_orders) > 0
     B, S = 0, 1
 
+    f = 1 - fee_ratio
     Order = namedtuple('Order', ['type', 'xrate', 'data'])
     all_orders = [
-        Order(B, order_limit_xrate(b_order), b_order)
+        Order(B, order_limit_xrate(b_order) / f, b_order)
         for b_order in b_orders
     ] + [
-        Order(S, 1 / order_limit_xrate(s_order), s_order)
+        Order(S, 1 / (order_limit_xrate(s_order) / f), s_order)
         for s_order in s_orders
     ]
 
@@ -57,8 +58,8 @@ def xrate_interval_iterator(b_orders, s_orders):
         if len(s_exec_orders) == 0:
             return
 
-        xrate_lb = next_order_xrate
-        xrate_ub = order_xrate
+        xrate_lb = next_order_xrate# * (1 - F(1, 1000))
+        xrate_ub = order_xrate# / (1 - F(1, 1000))
 
         b_exec_sell_amount_lb = b_exec_sell_amount - order_sell_amount(b_exec_orders[0])
         b_exec_sell_amount_ub = b_exec_sell_amount
@@ -79,29 +80,26 @@ def xrate_interval_iterator(b_orders, s_orders):
 
 # TODO: check if possible to describe the set of roots more compactly.
 
+yb = order_sell_amount
+pi = order_limit_xrate
+
 class SymbolicSolver:
     def __init__(self, fee_ratio):
         self.fee_ratio = fee_ratio
-
-    def yb(self, order):
-        return order_sell_amount(order)
-
-    def pi(self, order):
-        return order_limit_xrate(order) / (1 - self.fee_ratio)
 
     # Root 1:
     # xrate == b_pi
     # examples: data/token_pair-1-1-5.json
     def root1(self, b_exec_orders, s_exec_orders):
-        b_pi = self.pi(b_exec_orders[0])
-        return b_pi
+        b_pi = pi(b_exec_orders[0])
+        return b_pi * (1 - self.fee_ratio)
 
     # Root 2:
     # xrate == 1/s_pi
     # examples: data/token_pair-2-2-1.json
     def root2(self, b_exec_orders, s_exec_orders):
-        s_pi = self.pi(s_exec_orders[0])
-        return 1 / s_pi
+        s_pi = pi(s_exec_orders[0])
+        return 1 / (s_pi * (1 - self.fee_ratio)) 
 
     # Root 3:
     # xrate in ]1/s_pi, b_pi[,
@@ -109,19 +107,20 @@ class SymbolicSolver:
     # s_exec_order[0] partially filled
     # examples: data/token_pair-3-2-1.json (local optimum only)
     def root3(self, b_exec_orders, s_exec_orders):
-        s_pi = self.pi(s_exec_orders[0])
-        s_yb = self.yb(s_exec_orders[0])
-        b_yb_sum = sum(self.yb(b_order) for b_order in b_exec_orders)
+        s_pi = pi(s_exec_orders[0])
+        s_yb = yb(s_exec_orders[0])
+        b_yb_sum = sum(yb(b_order) for b_order in b_exec_orders)
 
         t = sum(
-            self.yb(s_order) * (2 - s_pi / self.pi(s_order))
+            yb(s_order) * (2 - s_pi / pi(s_order))
             for s_order in s_exec_orders[1:]
         )
-        # since s_pi <= self.pi(s_order) for all s_order,
+        # since s_pi <= pi(s_order) for all s_order,
         # then it must be true that
         assert t >= 0
 
-        r = 4 * b_yb_sum / (3 * s_pi * b_yb_sum + s_yb + t)
+        f = 1 - self.fee_ratio
+        r = 4 * b_yb_sum / ((2 + f) * s_pi * b_yb_sum + f * s_yb + f * t)
         return r
 
     # Root 4:
@@ -133,15 +132,15 @@ class SymbolicSolver:
     def root4(self, b_exec_orders, s_exec_orders):
         if len(s_exec_orders) > 1:
             return None
-        b_pi = self.pi(b_exec_orders[0])
-        s_pi = self.pi(s_exec_orders[0])
-        s_yb = self.yb(s_exec_orders[0])
-        b_yb_sum = sum(self.yb(b_order) for b_order in b_exec_orders)
+        b_pi = pi(b_exec_orders[0])
+        s_pi = pi(s_exec_orders[0])
+        s_yb = yb(s_exec_orders[0])
+        b_yb_sum = sum(yb(b_order) for b_order in b_exec_orders)
 
-        t = b_pi * (s_pi * b_yb_sum + s_yb) / (2 * s_pi * s_yb)
+        t = b_pi * (s_pi * b_yb_sum + s_yb) / (2 * s_pi * s_yb * (1 - self.fee_ratio))
         r = sqrt(t) if t >= 0 else None
 
-        # Small numeric error introduced here:
+        # This is the only irrational root. Approximating:
         return F(r)
 
     # Root 5:
@@ -149,10 +148,10 @@ class SymbolicSolver:
     # all orders fully filled
     # examples: data/token_pair-1-1-{2,4}.json, data/token_pair-2-2-2.json
     def root5(self, b_exec_orders, s_exec_orders):
-        b_yb_sum = sum(self.yb(b_order) for b_order in b_exec_orders)
-        s_yb_sum = sum(self.yb(s_order) for s_order in s_exec_orders)
+        b_yb_sum = sum(yb(b_order) for b_order in b_exec_orders)
+        s_yb_sum = sum(yb(s_order) for s_order in s_exec_orders)
 
-        r = b_yb_sum / s_yb_sum
+        r = b_yb_sum / (s_yb_sum * (1 - self.fee_ratio))
         return r
 
     # Also returns the id (1-5) of the root for debugging purposes
@@ -183,7 +182,7 @@ class SymbolicSolver:
 
         def compute_objective(xrate):
             b_buy_amounts, s_buy_amounts = find_best_buy_amounts(
-                xrate, b_exec_orders, s_exec_orders
+                xrate, b_exec_orders, s_exec_orders, fee_ratio=self.fee_ratio
             )
             return evaluate_objective_rational(
                 b_exec_orders, s_exec_orders, xrate,
@@ -201,8 +200,8 @@ class SymbolicSolver:
 
         opt = max(xrates_obj, key=lambda xio: xio[2])
 
-        b_pi = self.pi(b_exec_orders[0])
-        s_pi = self.pi(s_exec_orders[0])
+        b_pi = pi(b_exec_orders[0])
+        s_pi = pi(s_exec_orders[0])
         for xrate, root_ids, obj in xrates_obj:
             logger.debug(
                 f"xrate in [{float(1/s_pi)}, {float(b_pi)}] -> "
@@ -218,7 +217,7 @@ class SymbolicSolver:
                 xrate_lb, xrate_ub, b_exec_orders, s_exec_orders
             )
             for xrate_lb, xrate_ub, b_exec_orders, s_exec_orders
-            in xrate_interval_iterator(b_orders, s_orders)
+            in xrate_interval_iterator(b_orders, s_orders, self.fee_ratio)
         ]
         xrates_obj = [(xrate, obj) for xrate, obj in xrates_obj if xrate is not None]
 

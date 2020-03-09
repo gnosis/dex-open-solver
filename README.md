@@ -35,8 +35,6 @@ rational numbers.
 
 TODO:
 
-* Fee is partially done, and currently disabled.
-
 * To actually generate the output solution json, it is necessary to recompute the
 traded amounts using the integer arithmetic done in the smart contract. There is
 some code for that, but it's not enabled.

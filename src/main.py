@@ -5,6 +5,8 @@ import logging
 from .solver.xrate import find_best_xrate
 from .solver.amount import find_best_buy_amounts
 from .objective import evaluate_objective_rational
+from .round import round_solution
+from .validation import validate
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +52,17 @@ def main(instance, token_pair, b_buy_token_price, xrate=None):
     logger.info(f"s_buy_amounts:\t{fraction_list_as_str(s_buy_amounts)}")
     logger.info(f"objective:\t{objective}")
 
+    b_buy_amounts, s_buy_amounts = round_solution(
+        b_orders, s_orders,
+        b_buy_amounts, s_buy_amounts,
+        xrate,
+        b_buy_token_price=b_buy_token_price,
+        fee_ratio=fee_ratio
+    )
+    logger.info(f"integer b_buy_amounts:\t{b_buy_amounts}")
+    logger.info(f"integer s_buy_amounts:\t{s_buy_amounts}")
+
+    validate(b_orders, s_orders, b_buy_amounts, s_buy_amounts, xrate, b_buy_token_price, fee_ratio)
 
 if __name__ == "__main__":
 

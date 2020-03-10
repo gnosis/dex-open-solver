@@ -43,13 +43,14 @@ def find_best_buy_amounts(xrate, b_orders, s_orders, fee_ratio=F(0)):
         b_buy_amount_ub = order_sell_amount(b_orders[b_i]) * (1 - fee_ratio) / xrate - b_buy_amounts[b_i]
         s_buy_amount_ub = order_sell_amount(s_orders[s_i]) * (1 - fee_ratio) * xrate - s_buy_amounts[s_i]
         assert b_buy_amount_ub >= 0 and s_buy_amount_ub >= 0
+
         # Check which order gets completely filled first
-        if b_buy_amount_ub < s_buy_amount_ub / xrate:
+        if b_buy_amount_ub < s_buy_amount_ub / xrate * (1 - fee_ratio):
             b_buy_amounts[b_i] += b_buy_amount_ub
-            s_buy_amounts[s_i] += b_buy_amount_ub * xrate
+            s_buy_amounts[s_i] += b_buy_amount_ub * xrate / (1 - fee_ratio)
             b_i += 1
-        elif b_buy_amount_ub > s_buy_amount_ub / xrate:
-            b_buy_amounts[b_i] += s_buy_amount_ub / xrate
+        elif b_buy_amount_ub > s_buy_amount_ub / xrate * (1 - fee_ratio):
+            b_buy_amounts[b_i] += s_buy_amount_ub / xrate * (1 - fee_ratio)
             s_buy_amounts[s_i] += s_buy_amount_ub
             s_i += 1
         else:
@@ -57,6 +58,9 @@ def find_best_buy_amounts(xrate, b_orders, s_orders, fee_ratio=F(0)):
             s_buy_amounts[s_i] += s_buy_amount_ub
             b_i += 1
             s_i += 1
+
+    # Token balance invariant.
+    assert sum(b_buy_amounts) * xrate == sum(s_buy_amounts) * (1 - fee_ratio)
 
     # Integrate the execution amounts of the excluded orders.
     all_b_buy_amounts = [0] * len(all_b_orders)

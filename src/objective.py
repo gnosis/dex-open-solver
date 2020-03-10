@@ -49,9 +49,10 @@ class IntegerTraits:
     @classmethod
     def compute_sell_from_buy_amount(
         cls, buy_amount, xrate,
-        buy_token_price=1, sell_token_price=1,
+        buy_token_price=1,
         fee_ratio=0
     ):
+        sell_token_price = buy_token_price / xrate
         sell_amount = (buy_amount * buy_token_price)\
             // (1 - fee_ratio)\
             // sell_token_price
@@ -70,8 +71,9 @@ class IntegerTraits:
     @classmethod
     def compute_max_utility(
         cls, max_sell_amount, xrate, max_xrate,
-        sell_token_price=1, buy_token_price=1, fee_ratio=0
+        buy_token_price=1, fee_ratio=0
     ):
+        sell_token_price = buy_token_price / xrate
         min_buy_amount = max_sell_amount / xrate
 
         # This is the correct formula, but smart contract factors out the fees from
@@ -120,18 +122,8 @@ def evaluate_objective_b(
     buy_amounts,
     arith_traits=RationalTraits(),
     buy_token_price=None,
-    sell_token_price=None,
     **kwargs
 ):
-    # set default values for token prices
-    assert buy_token_price is not None or sell_token_price is not None
-    if buy_token_price is not None and sell_token_price is None:
-        sell_token_price = buy_token_price / xrate
-    elif buy_token_price is None and sell_token_price is not None:
-        buy_token_price = sell_token_price * xrate
-    else:
-        assert xrate == buy_token_price / sell_token_price
-
     return sum(
         arith_traits.compute_objective_term(
             buy_amount=buy_amount,
@@ -139,7 +131,6 @@ def evaluate_objective_b(
             xrate=xrate,
             max_xrate=order_limit_xrate(order),
             buy_token_price=buy_token_price,
-            sell_token_price=sell_token_price,
             **kwargs
         ) for buy_amount, order in zip(buy_amounts, orders)
     )
@@ -151,19 +142,16 @@ def evaluate_objective(
     b_buy_amounts, s_buy_amounts,
     arith_traits=RationalTraits(),
     b_buy_token_price=1,
-    s_buy_token_price=None,
     **kwargs
 ):
     t1 = evaluate_objective_b(
         b_orders, xrate, b_buy_amounts,
         buy_token_price=b_buy_token_price,
-        sell_token_price=s_buy_token_price,
         **kwargs
     )
     t2 = evaluate_objective_b(
         s_orders, 1 / xrate, s_buy_amounts,
-        buy_token_price=s_buy_token_price,
-        sell_token_price=b_buy_token_price,
+        buy_token_price=b_buy_token_price / xrate,
         **kwargs
     )
     return t1 + t2

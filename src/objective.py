@@ -5,8 +5,8 @@ class RationalTraits:
     """Objective computation using real or rational arithmeric."""
     # xrate is in [sell_token] / [buy_token] units
     @classmethod
-    def compute_sell_from_buy_amount(cls, buy_amount, xrate, fee_ratio=0, **kwargs):
-        return buy_amount * xrate / (1 - fee_ratio)
+    def compute_sell_from_buy_amount(cls, buy_amount, xrate, fee=0, **kwargs):
+        return buy_amount * xrate / (1 - fee)
 
     # xrate and max_xrate is in [sell_token] / [buy_token] units
     @classmethod
@@ -50,11 +50,11 @@ class IntegerTraits:
     def compute_sell_from_buy_amount(
         cls, buy_amount, xrate,
         buy_token_price=1,
-        fee_ratio=0
+        fee=0
     ):
         sell_token_price = buy_token_price / xrate
         sell_amount = (buy_amount * buy_token_price)\
-            // (1 - fee_ratio)\
+            // (1 - fee)\
             // sell_token_price
         return sell_amount
 
@@ -71,7 +71,7 @@ class IntegerTraits:
     @classmethod
     def compute_max_utility(
         cls, max_sell_amount, xrate, max_xrate,
-        buy_token_price=1, fee_ratio=0
+        buy_token_price=1, fee=0
     ):
         sell_token_price = buy_token_price / xrate
         min_buy_amount = max_sell_amount / xrate
@@ -82,9 +82,9 @@ class IntegerTraits:
         # umax = max(
         #    (
         #        max_sell_amount * self.sell_token_price
-        #        * (self.fee_ratio.denominator * 2 - 1)
+        #        * (self.fee.denominator * 2 - 1)
         #    )
-        #    // (self.fee_ratio.denominator * 2)
+        #    // (self.fee.denominator * 2)
         #    - (max_sell_amount * min_buy_amount * self.buy_token_price)
         #    // max_sell_amount,
         #    0
@@ -92,8 +92,8 @@ class IntegerTraits:
 
         umax = max(
             (
-                max_sell_amount * sell_token_price * (fee_ratio.denominator - 1)
-            ) // fee_ratio.denominator
+                max_sell_amount * sell_token_price * (fee.denominator - 1)
+            ) // fee.denominator
             - (max_sell_amount * min_buy_amount * buy_token_price) // max_sell_amount,
             0
         )
@@ -180,4 +180,32 @@ def evaluate_objective_integer(
         b_orders, s_orders, xrate, b_buy_amounts, s_buy_amounts,
         arith_traits=IntegerTraits(),
         **kwargs
+    )
+
+def compute_sell_amounts_from_buy_amounts(
+    buy_amounts, xrate, buy_token_price, fee,
+    arith_traits=RationalTraits()
+):
+    sell_amounts = [
+        arith_traits.compute_sell_from_buy_amount(
+            buy_amount=buy_amount,
+            xrate=xrate,
+            buy_token_price=buy_token_price,
+            fee=fee
+        ) for buy_amount in buy_amounts
+    ]
+    return sell_amounts
+
+def compute_sell_amounts_from_buy_amounts_rational(
+    buy_amounts, xrate, buy_token_price, fee
+):
+    return compute_sell_amounts_from_buy_amounts(
+        buy_amounts, xrate, buy_token_price, fee, arith_traits=RationalTraits()
+    )
+
+def compute_sell_amounts_from_buy_amounts_integer(
+    buy_amounts, xrate, buy_token_price, fee
+):
+    return compute_sell_amounts_from_buy_amounts(
+        buy_amounts, xrate, buy_token_price, fee, arith_traits=IntegerTraits()
     )

@@ -2,35 +2,33 @@ from fractions import Fraction as F
 import argparse
 import json
 import logging
+import tempfile
+
+from .api import load_problem, dump_solution
 from .solver.xrate import find_best_xrate
 from .solver.amount import find_best_buy_amounts
-from .objective import evaluate_objective_rational
+from .objective import (
+    evaluate_objective_rational,
+    IntegerTraits, RationalTraits,
+    compute_sell_amounts_from_buy_amounts_rational
+)
 from .round import round_solution
 from .validation import validate
 
 logger = logging.getLogger(__name__)
 
 
-def main(instance, token_pair, b_buy_token_price, xrate=None):
-    problem = json.load(instance)
-    b_buy_token, s_buy_token = token_pair
+def main(args):
+    b_orders, s_orders, fee = load_problem(args.instance, args.token_pair)
+    args.instance.seek(0)   #  Resets file descriptor to the begining of the file
 
-    b_orders = [
-        order for order in problem["orders"]
-        if order["buyToken"] == b_buy_token and order["sellToken"] == s_buy_token
-    ]
-    s_orders = [
-        order for order in problem["orders"]
-        if order["buyToken"] == s_buy_token and order["sellToken"] == b_buy_token
-    ]
-
-    fee_ratio = F(1, 1000)
-
-    if xrate is None:
-        xrate, _ = find_best_xrate(b_orders, s_orders, fee_ratio)
+    if args.exchange_rate is None:
+        xrate, _ = find_best_xrate(b_orders, s_orders, fee)
+    else:
+        xrate = args.exchange_rate
 
     b_buy_amounts, s_buy_amounts = find_best_buy_amounts(
-        xrate, b_orders, s_orders, fee_ratio
+        xrate, b_orders, s_orders, fee
     )
 
     objective = evaluate_objective_rational(
@@ -39,30 +37,50 @@ def main(instance, token_pair, b_buy_token_price, xrate=None):
         xrate,
         b_buy_amounts,
         s_buy_amounts,
-        b_buy_token_price=b_buy_token_price,
-        s_buy_token_price=b_buy_token_price / xrate,
-        fee_ratio=fee_ratio
+        b_buy_token_price=args.b_buy_token_price,
+        fee=fee
     )
 
     def fraction_list_as_str(lst):
         return "[" + ", ".join(str(f) for f in lst) + "]"
 
     logger.info(f"xrate:\t{xrate}")
-    logger.info(f"b_buy_amounts:\t{fraction_list_as_str(b_buy_amounts)}")
-    logger.info(f"s_buy_amounts:\t{fraction_list_as_str(s_buy_amounts)}")
+    logger.info(f"rational b_buy_amounts:\t{fraction_list_as_str(b_buy_amounts)}")
+    logger.info(f"rational s_buy_amounts:\t{fraction_list_as_str(s_buy_amounts)}")
     logger.info(f"objective:\t{objective}")
 
-    b_buy_amounts, s_buy_amounts = round_solution(
-        b_orders, s_orders,
-        b_buy_amounts, s_buy_amounts,
-        xrate,
-        b_buy_token_price=b_buy_token_price,
-        fee_ratio=fee_ratio
-    )
-    logger.info(f"integer b_buy_amounts:\t{b_buy_amounts}")
-    logger.info(f"integer s_buy_amounts:\t{s_buy_amounts}")
+    if args.solution_type == "float":
+        dump_solution(
+            args.instance, args.solution,
+            b_orders, s_orders, b_buy_amounts, s_buy_amounts,
+            xrate=xrate,
+            b_buy_token_price = args.b_buy_token_price,
+            fee=fee,
+            arith_traits=RationalTraits()
+        )
+    else:
+        b_buy_amounts, s_buy_amounts = round_solution(
+            b_orders, s_orders,
+            b_buy_amounts, s_buy_amounts,
+            xrate,
+            b_buy_token_price=args.b_buy_token_price,
+            fee=fee
+        )
+        logger.info(f"integer b_buy_amounts:\t{b_buy_amounts}")
+        logger.info(f"integer s_buy_amounts:\t{s_buy_amounts}")
 
-    validate(b_orders, s_orders, b_buy_amounts, s_buy_amounts, xrate, b_buy_token_price, fee_ratio)
+        validate(b_orders, s_orders, b_buy_amounts, s_buy_amounts, xrate, args.b_buy_token_price, fee)
+
+        dump_solution(
+            args.instance, args.solution,
+            b_orders, s_orders, b_buy_amounts, s_buy_amounts,
+            xrate=xrate,
+            b_buy_token_price = args.b_buy_token_price,
+            fee=fee,
+            arith_traits=IntegerTraits()
+        )
+
+    logger.info(f"Solution file is {args.solution.name} .")
 
 if __name__ == "__main__":
 
@@ -75,7 +93,7 @@ if __name__ == "__main__":
     parser.add_argument(
         'instance',
         type=argparse.FileType('r'),
-        help='File containing the source instance analyze.'
+        help='File containing the instance to solve.'
     )
     parser.add_argument(
         'token_pair',
@@ -94,7 +112,23 @@ if __name__ == "__main__":
         type=F,
         help='Exchange rate (token1/token2) as a fraction.'
     )
+    parser.add_argument(
+        '--solution',
+        type=argparse.FileType('w+'),
+        default=tempfile.NamedTemporaryFile(
+            mode='w+', delete=False, prefix="solution-", suffix=".json"
+        ),
+        help='File where the solution should be output to.'
+    )
+
+    parser.add_argument(
+        '--solution_type',
+        type=str,
+        choices=["float", "int"],
+        default="int",
+        help='If a float or integer solution should be output.'
+    )
 
     args = parser.parse_args()
 
-    main(args.instance, args.token_pair, args.b_buy_token_price, args.exchange_rate)
+    main(args)

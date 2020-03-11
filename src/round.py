@@ -9,7 +9,7 @@ def round_solution(
     b_buy_amounts, s_buy_amounts,
     xrate,
     b_buy_token_price,
-    fee_ratio
+    fee
 ):
     # floor all b_buy amounts
     for i in range(len(b_buy_amounts)):
@@ -23,7 +23,7 @@ def round_solution(
                 buy_amount,
                 xrate,
                 buy_token_price=b_buy_token_price,
-                fee_ratio=fee_ratio
+                fee=fee
             )
             for buy_amount in b_buy_amounts
         )

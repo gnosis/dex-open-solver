@@ -1,4 +1,4 @@
-from .objective import IntegerTraits
+from .objective import IntegerTraits, compute_sell_amounts_from_buy_amounts
 from .util import order_sell_amount, order_limit_xrate
 
 def validate(
@@ -6,9 +6,17 @@ def validate(
     b_buy_amounts, s_buy_amounts,
     xrate, 
     b_buy_token_price,
-    fee_ratio,
-    ArithTraits=IntegerTraits
+    fee,
+    arith_traits=IntegerTraits()
 ):
+    b_sell_amounts = compute_sell_amounts_from_buy_amounts(
+        b_buy_amounts, xrate, b_buy_token_price, fee,
+        arith_traits=arith_traits
+    )
+    s_sell_amounts = compute_sell_amounts_from_buy_amounts(
+        s_buy_amounts, 1 / xrate, b_buy_token_price / xrate, fee,
+        arith_traits=arith_traits
+    )
 
     def validate_order_constraints(order, buy_amount, sell_amount):
         assert buy_amount == 0 or sell_amount / buy_amount <= order_limit_xrate(order)
@@ -16,18 +24,12 @@ def validate(
 
     b_token_balance = 0
     s_token_balance = 0
-    for order, buy_amount in zip(b_orders, b_buy_amounts):
-        sell_amount = ArithTraits.compute_sell_from_buy_amount(
-            buy_amount, xrate, b_buy_token_price, fee_ratio
-        )
+    for order, buy_amount, sell_amount in zip(b_orders, b_buy_amounts, b_sell_amounts):
         validate_order_constraints(order, buy_amount, sell_amount)
         b_token_balance -= buy_amount
         s_token_balance += sell_amount
 
-    for order, buy_amount in zip(s_orders, s_buy_amounts):
-        sell_amount = ArithTraits.compute_sell_from_buy_amount(
-            buy_amount, 1 / xrate, b_buy_token_price / xrate, fee_ratio
-        )
+    for order, buy_amount, sell_amount in zip(s_orders, s_buy_amounts, s_sell_amounts):
         validate_order_constraints(order, buy_amount, sell_amount)
         s_token_balance -= buy_amount
         b_token_balance += sell_amount

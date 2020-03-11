@@ -21,11 +21,11 @@ from fractions import Fraction as F
 logger = logging.getLogger(__name__)
 
 
-def xrate_interval_iterator(b_orders, s_orders, fee_ratio):
+def xrate_interval_iterator(b_orders, s_orders, fee):
     assert len(b_orders) > 0 and len(s_orders) > 0
     B, S = 0, 1
 
-    f = 1 - fee_ratio
+    f = 1 - fee
     Order = namedtuple('Order', ['type', 'xrate', 'data'])
     all_orders = [
         Order(B, order_limit_xrate(b_order) / f, b_order)
@@ -84,22 +84,22 @@ yb = order_sell_amount
 pi = order_limit_xrate
 
 class SymbolicSolver:
-    def __init__(self, fee_ratio):
-        self.fee_ratio = fee_ratio
+    def __init__(self, fee):
+        self.fee = fee
 
     # Root 1:
     # xrate == b_pi
     # examples: data/token_pair-1-1-5.json
     def root1(self, b_exec_orders, s_exec_orders):
         b_pi = pi(b_exec_orders[0])
-        return b_pi * (1 - self.fee_ratio)
+        return b_pi * (1 - self.fee)
 
     # Root 2:
     # xrate == 1/s_pi
     # examples: data/token_pair-2-2-1.json
     def root2(self, b_exec_orders, s_exec_orders):
         s_pi = pi(s_exec_orders[0])
-        return 1 / (s_pi * (1 - self.fee_ratio)) 
+        return 1 / (s_pi * (1 - self.fee)) 
 
     # Root 3:
     # xrate in ]1/s_pi, b_pi[,
@@ -119,7 +119,7 @@ class SymbolicSolver:
         # then it must be true that
         assert t >= 0
 
-        f = 1 - self.fee_ratio
+        f = 1 - self.fee
         r = 4 * b_yb_sum / ((2 + f) * s_pi * b_yb_sum + f * s_yb + f * t)
         return r
 
@@ -137,7 +137,7 @@ class SymbolicSolver:
         s_yb = yb(s_exec_orders[0])
         b_yb_sum = sum(yb(b_order) for b_order in b_exec_orders)
 
-        t = b_pi * (s_pi * b_yb_sum + s_yb) / (2 * s_pi * s_yb * (1 - self.fee_ratio))
+        t = b_pi * (s_pi * b_yb_sum + s_yb) / (2 * s_pi * s_yb * (1 - self.fee))
         r = sqrt(t) if t >= 0 else None
 
         # This is the only irrational root. Approximating:
@@ -151,7 +151,7 @@ class SymbolicSolver:
         b_yb_sum = sum(yb(b_order) for b_order in b_exec_orders)
         s_yb_sum = sum(yb(s_order) for s_order in s_exec_orders)
 
-        r = b_yb_sum / (s_yb_sum * (1 - self.fee_ratio))
+        r = b_yb_sum / (s_yb_sum * (1 - self.fee))
         return r
 
     # Also returns the id (1-5) of the root for debugging purposes
@@ -182,12 +182,12 @@ class SymbolicSolver:
 
         def compute_objective(xrate):
             b_buy_amounts, s_buy_amounts = find_best_buy_amounts(
-                xrate, b_exec_orders, s_exec_orders, fee_ratio=self.fee_ratio
+                xrate, b_exec_orders, s_exec_orders, fee=self.fee
             )
             return evaluate_objective_rational(
                 b_exec_orders, s_exec_orders, xrate,
                 b_buy_amounts, s_buy_amounts,
-                fee_ratio=self.fee_ratio
+                fee=self.fee
             )
 
         xrates_obj = [
@@ -217,17 +217,17 @@ class SymbolicSolver:
                 xrate_lb, xrate_ub, b_exec_orders, s_exec_orders
             )
             for xrate_lb, xrate_ub, b_exec_orders, s_exec_orders
-            in xrate_interval_iterator(b_orders, s_orders, self.fee_ratio)
+            in xrate_interval_iterator(b_orders, s_orders, self.fee)
         ]
         xrates_obj = [(xrate, obj) for xrate, obj in xrates_obj if xrate is not None]
 
         return max(xrates_obj, key=lambda xo: xo[1])
 
 
-def find_best_xrate(b_orders, s_orders, fee_ratio, Solver=SymbolicSolver):
+def find_best_xrate(b_orders, s_orders, fee, Solver=SymbolicSolver):
     """Find the optimal xrate for executing a set of orders and counter-orders.
 
     Convention: xrate = p(b_buy_token) / p(s_buy_token) = s_buy_amount / b_buy_amount.
     """
-    solver = Solver(fee_ratio)
+    solver = Solver(fee)
     return solver.solve(b_orders, s_orders)

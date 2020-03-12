@@ -1,6 +1,5 @@
 from fractions import Fraction as F
 import argparse
-import json
 import logging
 import tempfile
 
@@ -9,8 +8,7 @@ from .solver.xrate import find_best_xrate
 from .solver.amount import find_best_buy_amounts
 from .objective import (
     evaluate_objective_rational,
-    IntegerTraits, RationalTraits,
-    compute_sell_amounts_from_buy_amounts_rational
+    IntegerTraits, RationalTraits
 )
 from .round import round_solution
 from .validation import validate
@@ -19,8 +17,11 @@ logger = logging.getLogger(__name__)
 
 
 def main(args):
+    # Load sets of b_orders and s_orders
     b_orders, s_orders, fee = load_problem(args.instance, args.token_pair)
-    args.instance.seek(0)   #  Resets file descriptor to the begining of the file
+    # Resets file descriptor to the begining of the file
+    # (since it will be read again below)
+    args.instance.seek(0)
 
     if args.exchange_rate is None:
         xrate, _ = find_best_xrate(b_orders, s_orders, fee)
@@ -32,11 +33,9 @@ def main(args):
     )
 
     objective = evaluate_objective_rational(
-        b_orders,
-        s_orders,
+        b_orders, s_orders,
         xrate,
-        b_buy_amounts,
-        s_buy_amounts,
+        b_buy_amounts, s_buy_amounts,
         b_buy_token_price=args.b_buy_token_price,
         fee=fee
     )
@@ -49,12 +48,13 @@ def main(args):
     logger.info(f"rational s_buy_amounts:\t{fraction_list_as_str(s_buy_amounts)}")
     logger.info(f"objective:\t{objective}")
 
+    # Dump solution if a float solution is requested, otherwise round it first.
     if args.solution_type == "float":
         dump_solution(
             args.instance, args.solution,
             b_orders, s_orders, b_buy_amounts, s_buy_amounts,
             xrate=xrate,
-            b_buy_token_price = args.b_buy_token_price,
+            b_buy_token_price=args.b_buy_token_price,
             fee=fee,
             arith_traits=RationalTraits()
         )
@@ -69,18 +69,22 @@ def main(args):
         logger.info(f"integer b_buy_amounts:\t{b_buy_amounts}")
         logger.info(f"integer s_buy_amounts:\t{s_buy_amounts}")
 
-        validate(b_orders, s_orders, b_buy_amounts, s_buy_amounts, xrate, args.b_buy_token_price, fee)
+        validate(
+            b_orders, s_orders, b_buy_amounts, s_buy_amounts,
+            xrate, args.b_buy_token_price, fee
+        )
 
         dump_solution(
             args.instance, args.solution,
             b_orders, s_orders, b_buy_amounts, s_buy_amounts,
             xrate=xrate,
-            b_buy_token_price = args.b_buy_token_price,
+            b_buy_token_price=args.b_buy_token_price,
             fee=fee,
             arith_traits=IntegerTraits()
         )
 
     logger.info(f"Solution file is {args.solution.name} .")
+
 
 if __name__ == "__main__":
 

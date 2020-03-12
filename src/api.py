@@ -1,7 +1,9 @@
 import json
 from decimal import Decimal as D
 from fractions import Fraction as F
-from .objective import IntegerTraits, RationalTraits, compute_sell_amounts_from_buy_amounts
+from .objective import (
+    IntegerTraits, RationalTraits, compute_sell_amounts_from_buy_amounts
+)
 
 
 def load_problem(problem_file, token_pair):
@@ -20,6 +22,7 @@ def load_problem(problem_file, token_pair):
     fee = F(problem["fee"]["ratio"])
 
     return b_orders, s_orders, fee
+
 
 def dump_solution(
     problem_file, solution_file,
@@ -60,7 +63,7 @@ def dump_solution(
             all_orders.append(order)
             b_i += 1
         elif s_i < len(s_orders) and order == s_orders[s_i]:
-            order = s_orders[s_i]            
+            order = s_orders[s_i]
             order["execBuyAmount"] = str(s_buy_amounts[s_i])
             order["execSellAmount"] = str(s_sell_amounts[s_i])
             all_orders.append(order)
@@ -71,4 +74,3 @@ def dump_solution(
     # TODO: should we remove unused accounts as well?
 
     json.dump(instance, solution_file, indent=4)
-

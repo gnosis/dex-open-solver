@@ -58,8 +58,8 @@ def xrate_interval_iterator(b_orders, s_orders, fee):
         if len(s_exec_orders) == 0:
             return
 
-        xrate_lb = next_order_xrate# * (1 - F(1, 1000))
-        xrate_ub = order_xrate# / (1 - F(1, 1000))
+        xrate_lb = next_order_xrate
+        xrate_ub = order_xrate
 
         b_exec_sell_amount_lb = b_exec_sell_amount - order_sell_amount(b_exec_orders[0])
         b_exec_sell_amount_ub = b_exec_sell_amount
@@ -83,6 +83,7 @@ def xrate_interval_iterator(b_orders, s_orders, fee):
 yb = order_sell_amount
 pi = order_limit_xrate
 
+
 class SymbolicSolver:
     def __init__(self, fee):
         self.fee = fee
@@ -99,7 +100,7 @@ class SymbolicSolver:
     # examples: data/token_pair-2-2-1.json
     def root2(self, b_exec_orders, s_exec_orders):
         s_pi = pi(s_exec_orders[0])
-        return 1 / (s_pi * (1 - self.fee)) 
+        return 1 / (s_pi * (1 - self.fee))
 
     # Root 3:
     # xrate in ]1/s_pi, b_pi[,

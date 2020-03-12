@@ -2,7 +2,7 @@ from .util import order_sell_amount, order_limit_xrate
 
 
 class RationalTraits:
-    """Objective computation using real or rational arithmeric."""
+    """Objective calculation using real or rational arithmeric."""
     # xrate is in [sell_token] / [buy_token] units
     @classmethod
     def compute_sell_from_buy_amount(cls, buy_amount, xrate, fee=0, **kwargs):
@@ -40,7 +40,7 @@ class RationalTraits:
 
 
 class IntegerTraits:
-    """Objective computation using integer arithmeric.
+    """Objective calculation using integer arithmeric.
 
     Follows smartcontract semantics.
     """
@@ -182,6 +182,7 @@ def evaluate_objective_integer(
         **kwargs
     )
 
+
 def compute_sell_amounts_from_buy_amounts(
     buy_amounts, xrate, buy_token_price, fee,
     arith_traits=RationalTraits()
@@ -196,12 +197,14 @@ def compute_sell_amounts_from_buy_amounts(
     ]
     return sell_amounts
 
+
 def compute_sell_amounts_from_buy_amounts_rational(
     buy_amounts, xrate, buy_token_price, fee
 ):
     return compute_sell_amounts_from_buy_amounts(
         buy_amounts, xrate, buy_token_price, fee, arith_traits=RationalTraits()
     )
+
 
 def compute_sell_amounts_from_buy_amounts_integer(
     buy_amounts, xrate, buy_token_price, fee

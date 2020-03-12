@@ -76,20 +76,6 @@ class IntegerTraits:
         sell_token_price = buy_token_price / xrate
         min_buy_amount = max_sell_amount / xrate
 
-        # This is the correct formula, but smart contract factors out the fees from
-        # the utility functions and adds it in the end to the objective
-        # (and standard solver's code is not doing that at the moment)
-        # umax = max(
-        #    (
-        #        max_sell_amount * self.sell_token_price
-        #        * (self.fee.denominator * 2 - 1)
-        #    )
-        #    // (self.fee.denominator * 2)
-        #    - (max_sell_amount * min_buy_amount * self.buy_token_price)
-        #    // max_sell_amount,
-        #    0
-        # )
-
         umax = max(
             (
                 max_sell_amount * sell_token_price * (fee.denominator - 1)
@@ -140,21 +126,41 @@ def evaluate_objective(
     b_orders, s_orders,
     xrate,
     b_buy_amounts, s_buy_amounts,
-    arith_traits=RationalTraits(),
-    b_buy_token_price=1,
-    **kwargs
+    arith_traits,
+    b_buy_token_price,
+    fee
 ):
+    # 2u-umax terms for b_orders
     t1 = evaluate_objective_b(
         b_orders, xrate, b_buy_amounts,
         buy_token_price=b_buy_token_price,
-        **kwargs
+        fee=fee
     )
+
+    # 2u-umax terms for s_orders
     t2 = evaluate_objective_b(
         s_orders, 1 / xrate, s_buy_amounts,
         buy_token_price=b_buy_token_price / xrate,
-        **kwargs
+        fee=fee
     )
-    return t1 + t2
+
+    # 0.5 * fees
+    # TODO: not sure this is correct: check with Tom
+    # Compute the total amount of b_buy_token bought
+    b_total_buy_amount = sum(b_buy_amounts)
+    # Compute the total amount of b_buy_token sold
+    s_total_sell_amount = sum(
+        compute_sell_amounts_from_buy_amounts(
+            s_buy_amounts, 1 / xrate, b_buy_token_price / xrate, fee, arith_traits
+        )
+    )
+    # The difference multiplied by the price of b_buy_token is the total fee volume
+    # which is then divided by the fee_token_price to get the amount of fee tokens.
+    b_buy_amount_diff = s_total_sell_amount - b_total_buy_amount
+    fee_token_price = int(1e18)  # should this be a constant?
+    fees_payed = b_buy_amount_diff * b_buy_token_price / fee_token_price
+
+    return t1 + t2 + fees_payed / 2
 
 
 def evaluate_objective_rational(

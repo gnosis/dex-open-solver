@@ -188,6 +188,7 @@ class SymbolicSolver:
             return evaluate_objective_rational(
                 b_exec_orders, s_exec_orders, xrate,
                 b_buy_amounts, s_buy_amounts,
+                b_buy_token_price=1,
                 fee=self.fee
             )
 

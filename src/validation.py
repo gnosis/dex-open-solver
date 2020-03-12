@@ -1,10 +1,11 @@
 from .objective import IntegerTraits, compute_sell_amounts_from_buy_amounts
 from .util import order_sell_amount, order_limit_xrate
 
+
 def validate(
     b_orders, s_orders,
     b_buy_amounts, s_buy_amounts,
-    xrate, 
+    xrate,
     b_buy_token_price,
     fee,
     arith_traits=IntegerTraits()

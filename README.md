@@ -30,15 +30,6 @@ but I wouldn't bet on that.
 All this is very early WIP. Comments are missing and bugs are likely. Code
 was tested using the small instances in `data/` *exclusively*.
 
-Currently the code just prints the optimal exchange rate and traded amounts as
-rational numbers. 
-
-TODO:
-
-* To actually generate the output solution json, it is necessary to recompute the
-traded amounts using the integer arithmetic done in the smart contract. There is
-some code for that, but it's not enabled.
-
 ## Running
 
 For help on all options:

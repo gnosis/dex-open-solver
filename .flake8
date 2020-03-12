@@ -1,0 +1,11 @@
+[flake8]
+python = 3
+disable = false
+excludes = []
+ignore =
+	# Do not use variables named 'l', 'o', or 'i'
+	E741,
+	# Line breaks should occur after the binary operator to keep all variable names aligned.
+	W503
+max-complexity = -1
+max-line-length = 90

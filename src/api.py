@@ -4,18 +4,26 @@ from fractions import Fraction as F
 from .objective import (
     IntegerTraits, RationalTraits, compute_sell_amounts_from_buy_amounts
 )
+from .util import (
+    restrict_order_sell_amounts_by_balances,
+    filter_orders_tokenpair
+)
 
 
 def load_problem(problem_file, token_pair):
     problem = json.load(problem_file, parse_float=D)
     b_buy_token, s_buy_token = token_pair
 
+    orders = filter_orders_tokenpair(problem['orders'], token_pair)
+
+    orders = restrict_order_sell_amounts_by_balances(orders, problem['accounts'])
+
     b_orders = [
-        order for order in problem["orders"]
+        order for order in orders
         if order["buyToken"] == b_buy_token and order["sellToken"] == s_buy_token
     ]
     s_orders = [
-        order for order in problem["orders"]
+        order for order in orders
         if order["buyToken"] == s_buy_token and order["sellToken"] == b_buy_token
     ]
 

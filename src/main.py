@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 def main(args):
     # Load sets of b_orders and s_orders
     b_orders, s_orders, fee = load_problem(args.instance, args.token_pair)
+
+    assert len(b_orders) > 0 and len(s_orders) > 0
+
     # Resets file descriptor to the begining of the file
     # (since it will be read again below)
     args.instance.seek(0)
@@ -27,6 +30,10 @@ def main(args):
         xrate, _ = find_best_xrate(b_orders, s_orders, fee)
     else:
         xrate = args.exchange_rate
+
+    if xrate is None:
+        logger.info("No matching orders.")
+        return
 
     b_buy_amounts, s_buy_amounts = find_best_buy_amounts(
         xrate, b_orders, s_orders, fee

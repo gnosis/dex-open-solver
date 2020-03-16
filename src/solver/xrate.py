@@ -223,6 +223,9 @@ class SymbolicSolver:
         ]
         xrates_obj = [(xrate, obj) for xrate, obj in xrates_obj if xrate is not None]
 
+        if len(xrates_obj) == 0:
+            return None, None
+
         return max(xrates_obj, key=lambda xo: xo[1])
 
 

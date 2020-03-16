@@ -63,17 +63,18 @@ def dump_solution(
     all_orders = []
     b_i = 0
     s_i = 0
+
     for order in instance["orders"]:
-        if b_i < len(b_orders) and order == b_orders[b_i]:
-            order = b_orders[b_i]
-            order["execBuyAmount"] = str(b_buy_amounts[b_i])
+        if b_i < len(b_orders) and all(order[attr] == b_orders[b_i][attr]
+                                       for attr in ["accountID", "orderID"]):
             order["execSellAmount"] = str(b_sell_amounts[b_i])
+            order["execBuyAmount"] = str(b_buy_amounts[b_i])
             all_orders.append(order)
             b_i += 1
-        elif s_i < len(s_orders) and order == s_orders[s_i]:
-            order = s_orders[s_i]
-            order["execBuyAmount"] = str(s_buy_amounts[s_i])
+        elif s_i < len(s_orders) and all(order[attr] == s_orders[s_i][attr]
+                                         for attr in ["accountID", "orderID"]):
             order["execSellAmount"] = str(s_sell_amounts[s_i])
+            order["execBuyAmount"] = str(s_buy_amounts[s_i])
             all_orders.append(order)
             s_i += 1
 

@@ -1,5 +1,6 @@
 from .objective import IntegerTraits, compute_sell_amounts_from_buy_amounts
 from .util import order_sell_amount, order_limit_xrate
+from fractions import Fraction as F
 
 
 def validate(
@@ -20,7 +21,7 @@ def validate(
     )
 
     def validate_order_constraints(order, buy_amount, sell_amount):
-        assert buy_amount == 0 or sell_amount / buy_amount <= order_limit_xrate(order)
+        assert buy_amount == 0 or F(sell_amount, buy_amount) <= order_limit_xrate(order)
         assert sell_amount <= order_sell_amount(order)
 
     b_token_balance = 0

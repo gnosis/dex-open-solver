@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 def main(args):
     # Load sets of b_orders and s_orders
-    b_orders, s_orders, fee = load_problem(args.instance, args.token_pair)
+    accounts, b_orders, s_orders, fee = load_problem(args.instance, args.token_pair)
 
     assert len(b_orders) > 0 and len(s_orders) > 0
 
@@ -77,6 +77,7 @@ def main(args):
         logger.info(f"integer s_buy_amounts:\t{s_buy_amounts}")
 
         validate(
+            accounts,
             b_orders, s_orders, b_buy_amounts, s_buy_amounts,
             xrate, args.b_buy_token_price, fee
         )

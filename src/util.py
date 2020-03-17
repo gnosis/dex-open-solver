@@ -1,6 +1,4 @@
 from typing import List, Dict, Tuple
-import decimal
-from decimal import Decimal as D
 from fractions import Fraction as F
 
 
@@ -49,13 +47,21 @@ def restrict_order_sell_amounts_by_balances(
     """
     orders_capped = []
 
-    for o in orders:
-        tS = o['sellToken']
+    # Init dict for remaining balance per account and token pair.
+    remaining_balances = {}
+
+    # Iterate over orders sorted by limit price (best -> worse).
+    for o in sorted(orders, key=order_limit_xrate):
+        aID, tS, tB = o['accountID'], o['sellToken'], o['buyToken']
+
+        # Init remaining balance for new token pair on some account.
+        if (aID, tS, tB) not in remaining_balances:
+            sell_token_balance = F(accounts.get(o['accountID'], {}).get(tS, 0))
+            remaining_balances[(aID, tS, tB)] = sell_token_balance
 
         # Get sell amount (capped by available account balance).
-        available_balance = D(accounts.get(o['accountID'], {}).get(tS, 0))
-        sell_amount_old = D(o['sellAmount'])
-        sell_amount_new = min(sell_amount_old, available_balance)
+        sell_amount_old = F(o['sellAmount'])
+        sell_amount_new = min(sell_amount_old, remaining_balances[aID, tS, tB])
 
         # Skip orders with zero sell amount.
         if sell_amount_new == 0:
@@ -63,10 +69,13 @@ def restrict_order_sell_amounts_by_balances(
         else:
             assert sell_amount_old > 0
 
+        # Update remaining balance.
+        remaining_balances[aID, tS, tB] -= sell_amount_new
+        assert remaining_balances[aID, tS, tB] >= 0
+
         # Update buy amount according to capped sell amount.
-        buy_amount_old = D(o['buyAmount'])
+        buy_amount_old = F(o['buyAmount'])
         buy_amount_new = buy_amount_old * sell_amount_new / sell_amount_old
-        buy_amount_new = buy_amount_new.to_integral_value(rounding=decimal.ROUND_UP)
 
         o['sellAmount'] = sell_amount_new
         o['buyAmount'] = buy_amount_new

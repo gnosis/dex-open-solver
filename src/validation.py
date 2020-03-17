@@ -4,6 +4,7 @@ from fractions import Fraction as F
 
 
 def validate(
+    accounts,
     b_orders, s_orders,
     b_buy_amounts, s_buy_amounts,
     xrate,
@@ -26,14 +27,30 @@ def validate(
 
     b_token_balance = 0
     s_token_balance = 0
+
+    token_balance_account = {
+        order['accountID']: {
+            token: int(accounts[order['accountID']].get(token, 0))
+            for token in [order['buyToken'], order['sellToken']]
+        }
+        for order in b_orders + s_orders}
+
     for order, buy_amount, sell_amount in zip(b_orders, b_buy_amounts, b_sell_amounts):
         validate_order_constraints(order, buy_amount, sell_amount)
         b_token_balance -= buy_amount
         s_token_balance += sell_amount
+        token_balance_account[order['accountID']][order['buyToken']] += buy_amount
+        token_balance_account[order['accountID']][order['sellToken']] -= sell_amount
 
     for order, buy_amount, sell_amount in zip(s_orders, s_buy_amounts, s_sell_amounts):
         validate_order_constraints(order, buy_amount, sell_amount)
         s_token_balance -= buy_amount
         b_token_balance += sell_amount
+        token_balance_account[order['accountID']][order['buyToken']] += buy_amount
+        token_balance_account[order['accountID']][order['sellToken']] -= sell_amount
 
     assert s_token_balance == 0 and b_token_balance >= 0
+    assert all(token_balance_account[aID][t] >= 0
+               for aID in token_balance_account
+               for t in token_balance_account[aID]
+               )

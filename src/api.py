@@ -14,9 +14,11 @@ def load_problem(problem_file, token_pair):
     problem = json.load(problem_file, parse_float=D)
     b_buy_token, s_buy_token = token_pair
 
+    accounts = problem['accounts']
+
     orders = filter_orders_tokenpair(problem['orders'], token_pair)
 
-    orders = restrict_order_sell_amounts_by_balances(orders, problem['accounts'])
+    orders = restrict_order_sell_amounts_by_balances(orders, accounts)
 
     b_orders = [
         order for order in orders
@@ -29,7 +31,7 @@ def load_problem(problem_file, token_pair):
 
     fee = F(problem["fee"]["ratio"])
 
-    return b_orders, s_orders, fee
+    return accounts, b_orders, s_orders, fee
 
 
 def dump_solution(

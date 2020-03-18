@@ -51,7 +51,7 @@ def restrict_order_sell_amounts_by_balances(
     remaining_balances = {}
 
     # Iterate over orders sorted by limit price (best -> worse).
-    for o in sorted(orders, key=order_limit_xrate):
+    for o in sorted(orders, key=order_limit_xrate, reverse=True):
         aID, tS, tB = o['accountID'], o['sellToken'], o['buyToken']
 
         # Init remaining balance for new token pair on some account.

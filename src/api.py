@@ -1,13 +1,25 @@
 import json
 from decimal import Decimal as D
 from fractions import Fraction as F
+from typing import List, Dict
 from .objective import (
     IntegerTraits, RationalTraits, compute_sell_amounts_from_buy_amounts
 )
 from .util import (
     restrict_order_sell_amounts_by_balances,
-    filter_orders_tokenpair
+    filter_orders_tokenpair,
+    is_same_order
 )
+
+
+def init_order_IDs(orders: List[Dict]) -> List[Dict]:
+    # Get required length of order ID string.
+    nchars_order_id = len(str(len(orders)))
+    # Store position of order in input list and set ID (with leading zeroes, e.g., '001').
+    for idx, order in enumerate(orders):
+        order['listIdx'] = idx
+        order['ID'] = '%0*d' % (nchars_order_id, idx)
+    return orders
 
 
 def load_problem(problem_file, token_pair):
@@ -16,7 +28,11 @@ def load_problem(problem_file, token_pair):
 
     accounts = problem['accounts']
 
-    orders = filter_orders_tokenpair(problem['orders'], token_pair)
+    orders = problem['orders']
+
+    orders = init_order_IDs(orders)
+
+    orders = filter_orders_tokenpair(orders, token_pair)
 
     orders = restrict_order_sell_amounts_by_balances(orders, accounts)
 
@@ -59,22 +75,20 @@ def dump_solution(
         b_sell_amounts = list(map(float, b_sell_amounts))
         s_sell_amounts = list(map(float, s_sell_amounts))
 
-    instance = json.load(problem_file)
-
     # Dump b_orders and s_orders keeping the original (interleaved) order.
     all_orders = []
     b_i = 0
     s_i = 0
 
-    for order in instance["orders"]:
-        if b_i < len(b_orders) and all(order[attr] == b_orders[b_i][attr]
-                                       for attr in ["accountID", "orderID"]):
+    instance = json.load(problem_file)
+    original_orders = init_order_IDs(instance["orders"])
+    for order in original_orders:
+        if b_i < len(b_orders) and is_same_order(order, b_orders[b_i]):
             order["execSellAmount"] = str(b_sell_amounts[b_i])
             order["execBuyAmount"] = str(b_buy_amounts[b_i])
             all_orders.append(order)
             b_i += 1
-        elif s_i < len(s_orders) and all(order[attr] == s_orders[s_i][attr]
-                                         for attr in ["accountID", "orderID"]):
+        elif s_i < len(s_orders) and is_same_order(order, s_orders[s_i]):
             order["execSellAmount"] = str(s_sell_amounts[s_i])
             order["execBuyAmount"] = str(s_buy_amounts[s_i])
             all_orders.append(order)
@@ -83,5 +97,4 @@ def dump_solution(
     instance["orders"] = all_orders
 
     # TODO: should we remove unused accounts as well?
-
     json.dump(instance, solution_file, indent=4)

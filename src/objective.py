@@ -5,7 +5,7 @@ class RationalTraits:
     """Objective calculation using real or rational arithmeric."""
     # xrate is in [sell_token] / [buy_token] units
     @classmethod
-    def compute_sell_from_buy_amount(cls, buy_amount, xrate, fee=0, **kwargs):
+    def compute_sell_from_buy_amount(cls, buy_amount, xrate, fee, **kwargs):
         return buy_amount * xrate / (1 - fee)
 
     # xrate and max_xrate is in [sell_token] / [buy_token] units
@@ -49,8 +49,8 @@ class IntegerTraits:
     @classmethod
     def compute_sell_from_buy_amount(
         cls, buy_amount, xrate,
-        buy_token_price=1,
-        fee=0
+        buy_token_price,
+        fee
     ):
         sell_token_price = buy_token_price / xrate
         sell_amount = (buy_amount * buy_token_price)\

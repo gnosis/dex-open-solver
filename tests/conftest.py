@@ -1,9 +1,22 @@
 """Global configuration for pytest."""
 import glob
+import os
 from pathlib import Path
 import pytest
+import hypothesis
 from itertools import product
-from copy import deepcopy
+
+
+# In the "ci" profile tests are deterministic
+hypothesis.settings.register_profile("ci", derandomize=True)
+
+# In the "debug" profile output is verbose
+hypothesis.settings.register_profile(
+    "debug", verbosity=hypothesis.Verbosity.verbose, max_examples=1000
+)
+
+# Use default profile if no profile is passed as a command line option
+hypothesis.settings.load_profile(os.getenv(u'HYPOTHESIS_PROFILE', 'default'))
 
 
 def has_tag(filename, tag):

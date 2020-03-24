@@ -1,5 +1,7 @@
 from typing import List, Dict, Tuple
 from fractions import Fraction as F
+from decimal import Decimal as D
+import json
 
 
 def order_buy_amount(order):
@@ -12,6 +14,10 @@ def order_sell_amount(order):
 
 def order_limit_xrate(order):
     return order_sell_amount(order) / order_buy_amount(order)
+
+
+def is_same_order(order1, order2):
+    return order1["ID"] == order2["ID"]
 
 
 def filter_orders_tokenpair(
@@ -84,3 +90,10 @@ def restrict_order_sell_amounts_by_balances(
         orders_capped.append(o)
 
     return orders_capped
+
+
+class DecimalToStringEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, D):
+            return str(obj)
+        return json.JSONEncoder.default(self, obj)

@@ -18,13 +18,13 @@ logger = logging.getLogger(__name__)
 
 def main(args):
     # Load sets of b_orders and s_orders
-    accounts, b_orders, s_orders, fee = load_problem(args.instance, args.token_pair)
+    accounts, b_orders, s_orders, fee = load_problem(
+        args.instance, args.token_pair
+    )
+
+    args.instance.seek(0)
 
     assert len(b_orders) > 0 and len(s_orders) > 0
-
-    # Resets file descriptor to the begining of the file
-    # (since it will be read again below)
-    args.instance.seek(0)
 
     if args.exchange_rate is None:
         xrate, _ = find_best_xrate(b_orders, s_orders, fee)

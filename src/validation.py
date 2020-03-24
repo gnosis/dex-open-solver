@@ -1,6 +1,19 @@
 from .objective import IntegerTraits, compute_sell_amounts_from_buy_amounts
 from .util import order_sell_amount, order_limit_xrate
+from .constants import MINIMUM_TRADABLE_AMOUNT
 from fractions import Fraction as F
+
+
+def validate_order_constraints(order, buy_amount, sell_amount):
+    # Limit exchange rate constraint
+    assert buy_amount == 0 or F(sell_amount, buy_amount) <= order_limit_xrate(order)
+
+    # Maximum sell amount constraint
+    assert sell_amount <= order_sell_amount(order)
+
+    # Minimum tradable amount constraint
+    assert buy_amount == 0 or buy_amount >= MINIMUM_TRADABLE_AMOUNT
+    assert sell_amount == 0 or sell_amount >= MINIMUM_TRADABLE_AMOUNT
 
 
 def validate(
@@ -20,10 +33,6 @@ def validate(
         s_buy_amounts, 1 / xrate, b_buy_token_price / xrate, fee,
         arith_traits=arith_traits
     )
-
-    def validate_order_constraints(order, buy_amount, sell_amount):
-        assert buy_amount == 0 or F(sell_amount, buy_amount) <= order_limit_xrate(order)
-        assert sell_amount <= order_sell_amount(order)
 
     b_token_balance = 0
     s_token_balance = 0

@@ -8,11 +8,11 @@ from itertools import product
 
 
 # In the "ci" profile tests are deterministic
-hypothesis.settings.register_profile("ci", derandomize=True)
+hypothesis.settings.register_profile('ci', derandomize=True)
 
 # In the "debug" profile output is verbose
 hypothesis.settings.register_profile(
-    "debug", verbosity=hypothesis.Verbosity.verbose, max_examples=1000
+    'debug', verbosity=hypothesis.Verbosity.verbose, max_examples=1000
 )
 
 # Use default profile if no profile is passed as a command line option
@@ -27,7 +27,7 @@ def has_tag(filename, tag):
 def pytest_collection_modifyitems(items):
     """Add a "slow" marker to any test with a ':slow' substring in its name."""
     for item in items:
-        if has_tag(item.nodeid, "slow"):
+        if has_tag(item.nodeid, 'slow'):
             item.add_marker(pytest.mark.slow)
 
 
@@ -70,7 +70,7 @@ def pytest_generate_tests(metafunc):
 
 
 def pytest_addoption(parser):
-    parser.addoption('--slow', action='store_true', dest="slow",
+    parser.addoption('--slow', action='store_true', dest='slow',
                      default=False, help="enable slow tests")
 
 

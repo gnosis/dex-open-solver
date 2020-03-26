@@ -1,3 +1,5 @@
 pytest==5.3.2 # Testing
 flake8==3.7.9 # Linting
 hypothesis==4.53.2 # Testing
+networkx==2.4 # Graph algorithms used for rounding
+

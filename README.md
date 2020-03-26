@@ -6,40 +6,37 @@ a set of orders and counter-orders between two tokens.
 The objective function being optimized here is disregarded utility (2u - umax)
 over all orders (same as in the standard solver).
 
-Only the base constraints are taken into account:
+Currently these constraints are taken into account:
 
 * limit exchange rates
 * limit sell prices
 * uniform clearing price
 * token balance
-
-meaning that there are many which are ignored, such as:
-
 * Sell amount <= account balance
 * Min buy/sell amount > 10000
+
+and these are ignored:
+
 * Max selected orders <= 30
 * Economic viability
-* etc, etc
 
-Trying to integrate these was not attempted yet. It might turn
-out that it can be done for some of them without loosing optimality guarantees,
-but I wouldn't bet on that.
+They will be integrated soon.
 
 ## Status
 
-All this is very early WIP. Comments are missing and bugs are likely. Code
+All this is still early WIP. Comments are missing and bugs are likely. Code
 was tested using the small instances in `data/` *exclusively*.
 
 ## Running
 
 For help on all options:
 ```
-python -m src.main -h
+python -m src.match -h
 ```
 
 Running example:
 ```
-python -m src.main solver_greedy/data/token_pair-1-1-1.json token0 token1
+python -m src.match solver_greedy/data/token_pair-1-1-1.json token-pair token0 token1
 ```
 
 ## Validating results

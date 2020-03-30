@@ -6,3 +6,12 @@ install:
   - pip install -r requirements.txt
 script:
   - python -m pytest tests
+deploy:
+  - provider: script
+    script: bash docker/deploy.sh $TRAVIS_TAG
+    on:
+      tags: true
+  - provider: script
+    script: bash docker/deploy.sh master
+    on:
+      branch: master

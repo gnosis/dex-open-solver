@@ -1,0 +1,8 @@
+if: (branch = master) OR (type = pull_request) OR (tag IS present)
+language: python3
+cache:
+  pip: true
+install:
+  - pip install -r requirements.txt
+script:
+  - python -m pytest tests

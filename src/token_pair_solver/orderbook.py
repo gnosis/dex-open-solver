@@ -100,7 +100,7 @@ def compute_objective(
 
     # The imbalance multiplied by the price of b_buy_token is the total fee volume
     # which is then divided by the fee_token_price to get the amount of fee tokens.
-    fees_payed = b_buy_token_imbalance * b_buy_token_price / FEE_TOKEN_PRICE
+    fees_payed = b_buy_token_imbalance * F(b_buy_token_price) / F(FEE_TOKEN_PRICE)
 
     return t1 + t2 + t3 + fees_payed / 2
 

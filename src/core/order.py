@@ -98,7 +98,8 @@ class Order(object):
             buy_token=order_dict['buyToken'],
             sell_token=order_dict['sellToken'],
             max_sell_amount=F(order_dict['sellAmount']),
-            max_xrate=F(order_dict['sellAmount']) / F(order_dict['buyAmount'])
+            # FIXME: handle buyAmount=0 correctly
+            max_xrate=F(order_dict['sellAmount']) / max(1, F(order_dict['buyAmount']))
         )
 
     def update_order_dict(self, order_dict):

@@ -37,7 +37,7 @@ class RationalTraits(BaseTraits):
 
     @classmethod
     def compute_max_utility_term(cls, order, xrate, buy_token_price, fee):
-        min_buy_amount = order.max_sell_amount / xrate
+        min_buy_amount = (order.max_sell_amount / xrate) * (1 - fee.value)
         return max(
             0,
             cls.compute_utility_term(

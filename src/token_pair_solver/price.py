@@ -29,12 +29,12 @@ def create_market_order(
     return market_order
 
 
-# Find a subset of f_orders (sell fee for buy_token) that can cover buy_token_imbalance
+# Find a subset of f_orders (sell fee for buy_token) that can cover buy_token_imbalance.
 def compute_token_price_to_cover_imbalance(
     buy_token, fee, buy_token_imbalance, f_orders
 ):
     # The max sell amount is the current fee imbalance plus an estimate
-    # of the imbalance obtained when rounding to integers (aka rounding buffer).
+    # of the imbalance obtained when rounding to integers.
     sell_amount = buy_token_imbalance * F(101, 100)
 
     buy_fee_market_order = create_market_order(
@@ -43,22 +43,22 @@ def compute_token_price_to_cover_imbalance(
         s_orders=f_orders
     )
 
-    # Compute the optimal xrate, which is the absolute b_buy_token_price
+    # Compute the optimal xrate, which is the absolute b_buy_token_price.
     xrate, _ = find_best_xrate([buy_fee_market_order], f_orders, fee)
 
-    # xrate = fee_token_price / buy_token_price
+    # Note: xrate = fee_token_price / buy_token_price.
 
     if xrate == buy_fee_market_order.max_xrate * (1 - fee.value):
-        # if optimal xrate is the fee_debt_order limit xrate then
+        # If optimal xrate is the fee_debt_order limit xrate then
         # b_buy_token_price must rounded up implying that
         # xrate=[fee_token_price / b_buy_token_price] is rounded down
-        # (and therefore does not violate fee_debt_order limit xrate)
+        # (and therefore does not violate fee_debt_order limit xrate).
         buy_token_price = ceil(FEE_TOKEN_PRICE / xrate)
     else:
-        # otherwise it is possible that the optimal xrate is the limit
+        # Otherwise it is possible that the optimal xrate is the limit
         # xrate of some f_order, in which case b_buy_token_price must be rounded
         # down implying 1/xrate=[b_buy_token_price / fee_token_price] is rounded down
-        # (and therefore does not violate the limit xrate of that f_order)
+        # (and therefore does not violate the limit xrate of that f_order).
         buy_token_price = floor(FEE_TOKEN_PRICE / xrate)
 
     return buy_token_price

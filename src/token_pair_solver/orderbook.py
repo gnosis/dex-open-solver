@@ -1,4 +1,6 @@
 """Functions for orderbooks containing 2 tokens (and optionally the fee token)."""
+from fractions import Fraction as F
+
 from src.core.constants import FEE_TOKEN_PRICE
 from src.core.order_util import IntegerTraits, RationalTraits
 
@@ -56,7 +58,7 @@ def compute_objective_for_orders(
 
 
 def compute_objective(
-    b_orders, s_orders,
+    b_orders, s_orders, f_orders,
     xrate,
     b_buy_token_price,
     fee,
@@ -80,9 +82,18 @@ def compute_objective(
         arith_traits=arith_traits
     )
 
+    # 2u-umax terms for f_orders
+    t3 = compute_objective_for_orders(
+        orders=f_orders,
+        xrate=F(b_buy_token_price) / F(FEE_TOKEN_PRICE),
+        buy_token_price=b_buy_token_price,
+        fee=fee,
+        arith_traits=arith_traits
+    )
+
     # Integrate 0.5 * fees into the objective computation.
 
-    # Compute the total amount of b_buy_token bought
+    # Compute the total amount of b_buy_token bought for s_buy_token
     b_buy_token_imbalance = compute_b_buy_token_imbalance(
         b_orders, s_orders, xrate, b_buy_token_price, fee, arith_traits
     )
@@ -91,7 +102,7 @@ def compute_objective(
     # which is then divided by the fee_token_price to get the amount of fee tokens.
     fees_payed = b_buy_token_imbalance * b_buy_token_price / FEE_TOKEN_PRICE
 
-    return t1 + t2 + fees_payed / 2
+    return t1 + t2 + t3 + fees_payed / 2
 
 
 def compute_objective_rational(*args, **kwargs):

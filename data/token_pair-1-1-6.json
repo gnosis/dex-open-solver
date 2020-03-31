@@ -1,0 +1,38 @@
+{
+    "metadata": {
+        "min_tradable_amount": 10000,
+        "numberFormat": "int128",
+        "interfaceVersion": "smartcontract",
+        "description": "This handmade example shows how the minimum tradable amount constraint alone can make the optimal xrate to be missed by the symbolic solver. The optimal solution, is when the sell order is fully filled and the buy order partially filled, however the corresponding root (#4), which currently does not consider this constraint, is not the optimum once the constraint is enforced."
+    },
+    "tokens": [
+        "token0",
+        "token1"
+    ],
+    "fee": {
+        "token": "token0",
+        "ratio": 0.001
+    },
+    "accounts": {
+        "A": {
+            "token0": "15000000000000000000",
+            "token1": "15000000000000000000"
+        }
+    },
+    "orders": [
+        {
+            "accountID": "A",
+            "sellToken": "token1",
+            "buyToken": "token0",
+            "sellAmount": "10010",
+            "buyAmount": "90162064539957329920/6661138053506129"
+        },
+        {
+            "accountID": "A",
+            "sellToken": "token0",
+            "buyToken": "token1",
+            "sellAmount": "13857",
+            "buyAmount": "46190/7"
+        }
+    ]
+}

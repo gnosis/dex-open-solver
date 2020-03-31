@@ -14,10 +14,10 @@ Currently these constraints are taken into account:
 * token balance
 * Sell amount <= account balance
 * Min buy/sell amount > 10000
+* Max selected orders <= 30
 
 and these are ignored:
 
-* Max selected orders <= 30
 * Economic viability
 
 They will be integrated soon.

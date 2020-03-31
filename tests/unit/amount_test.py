@@ -1,4 +1,4 @@
-from hypothesis import given
+from hypothesis import given, strategies as s
 from fractions import Fraction as F
 
 from src.token_pair_solver.amount import compute_buy_amounts
@@ -14,10 +14,11 @@ fee = Fee(token='T0', value=F(1, 1000))
 @given(
     random_order_list(min_size=1, max_size=4, buy_token='T0', sell_token='T1'),
     random_order_list(min_size=1, max_size=4, buy_token='T1', sell_token='T0'),
-    random_xrate()
+    random_xrate(),
+    s.integers(min_value=2, max_value=8)
 )
-def test_compute_buy_amounts(b_orders, s_orders, xrate):
-    compute_buy_amounts(xrate, b_orders, s_orders, fee)
+def test_compute_buy_amounts(b_orders, s_orders, xrate, max_nr_exec_orders):
+    compute_buy_amounts(xrate, b_orders, s_orders, fee, max_nr_exec_orders)
 
     prices = {
         'T0': xrate.numerator,
@@ -43,5 +44,6 @@ def test_compute_buy_amounts(b_orders, s_orders, xrate):
         accounts=accounts,
         orders=b_orders + s_orders,
         prices=prices,
-        fee=fee
+        fee=fee,
+        max_nr_exec_orders=max_nr_exec_orders
     )

@@ -146,3 +146,7 @@ def restrict_order_sell_amounts_by_balances(
         orders_capped.append(order)
 
     return orders_capped
+
+
+def count_nr_exec_orders(orders):
+    return sum(order.buy_amount > 0 for order in orders)

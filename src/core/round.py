@@ -4,7 +4,7 @@ from math import floor
 
 import networkx as nx
 
-from .constants import MINIMUM_TRADABLE_AMOUNT
+from .constants import MIN_TRADABLE_AMOUNT
 from .order_util import IntegerTraits
 
 logger = logging.getLogger(__name__)
@@ -92,12 +92,12 @@ def round_solution(prices, orders, fee):
 
             # Amount to be subtracted from order.buy_amount
             buy_amount_delta = min(
-                order.buy_amount - MINIMUM_TRADABLE_AMOUNT,
+                order.buy_amount - MIN_TRADABLE_AMOUNT,
                 -token_balances[leaf_token]
             )
 
             # Skip order if rounding would lead to violation of minimum tradable amount.
-            if order.buy_amount - buy_amount_delta < MINIMUM_TRADABLE_AMOUNT:
+            if order.buy_amount - buy_amount_delta < MIN_TRADABLE_AMOUNT:
                 continue
 
             # Skip order if rounding would lead to violation of max sell amount.

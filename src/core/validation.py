@@ -1,5 +1,7 @@
-from .constants import MINIMUM_TRADABLE_AMOUNT
 from fractions import Fraction as F
+
+from .constants import MAX_NR_EXEC_ORDERS, MIN_TRADABLE_AMOUNT
+from .orderbook import count_nr_exec_orders
 
 
 def validate_order_constraints(order, buy_amount, sell_amount):
@@ -10,17 +12,20 @@ def validate_order_constraints(order, buy_amount, sell_amount):
     assert sell_amount <= order.max_sell_amount
 
     # Minimum tradable amount constraint
-    assert buy_amount == 0 or buy_amount >= MINIMUM_TRADABLE_AMOUNT
-    assert sell_amount == 0 or sell_amount >= MINIMUM_TRADABLE_AMOUNT
+    assert buy_amount == 0 or buy_amount >= MIN_TRADABLE_AMOUNT
+    assert sell_amount == 0 or sell_amount >= MIN_TRADABLE_AMOUNT
 
 
 def validate(
     accounts,
     orders,
     prices,
-    fee
+    fee,
+    max_nr_exec_orders=MAX_NR_EXEC_ORDERS
 ):
     assert all(price.denominator == 1 for price in prices.values())
+
+    assert count_nr_exec_orders(orders) <= max_nr_exec_orders
 
     tokens = prices.keys()
     token_balances = {token: 0 for token in tokens}

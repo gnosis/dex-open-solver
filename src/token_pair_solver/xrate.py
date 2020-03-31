@@ -190,7 +190,7 @@ class SymbolicSolver:
             )
             # FIXME: b_buy_amounts, s_buy_amounts
             return compute_objective_rational(
-                b_exec_orders, s_exec_orders,
+                b_orders=b_exec_orders, s_orders=s_exec_orders, f_orders=[],
                 xrate=xrate,
                 b_buy_token_price=1,
                 fee=self.fee

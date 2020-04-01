@@ -2,7 +2,7 @@ import json
 import logging
 from copy import deepcopy
 from decimal import Decimal as D
-from itertools import combinations
+from itertools import permutations
 
 from src.core.api import IntegerTraits, dump_solution, load_problem
 from src.core.orderbook import (compute_connected_tokens,
@@ -72,7 +72,7 @@ def main(args):
     # TODO: parallelize this loop.
     best_objective = 0
     best_solution = ([], {})
-    for token_pair in combinations(connected_tokens, 2):
+    for token_pair in permutations(connected_tokens, 2):
         objective, solution = match_token_pair_and_evaluate(
             token_pair, accounts, orders, fee
         )

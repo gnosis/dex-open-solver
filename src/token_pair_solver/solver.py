@@ -204,14 +204,23 @@ def solve_token_pair_and_fee_token_given_exec_f_orders(
 
 
 def solve_token_pair_and_fee_token(
-    token_pair, accounts, b_orders, s_orders, f_orders, fee, xrate
+    token_pair, accounts, b_orders, s_orders, f_orders, fee,
+    xrate=None
 ):
     """Match orders between token pair and the fee token.
 
     Sets b_orders/s_orders/f_orders integral buy_amounts for the best execution.
     Also returns the prices found.
     """
-    assert len(b_orders) > 0 and len(s_orders) > 0
+    trivial_solution = [], dict()
+
+    if len(b_orders) > 0 or len(s_orders):
+        return trivial_solution
+
+    # This function does not support s_buy_token = fee token.
+    if token_pair[1] == fee.token:
+        token_pair = tuple(reversed(token_pair))
+
     b_buy_token, s_buy_token = token_pair
 
     logger.debug("=== Order matching on token pair + fee token ===")
@@ -229,7 +238,7 @@ def solve_token_pair_and_fee_token(
 
     if xrate is None:
         logger.info("No matching orders between %s and %s.", b_buy_token, s_buy_token)
-        return [], {}
+        return trivial_solution
 
     if b_buy_token == fee.token:
         # If b_buy_token is fee, then there is only two sets of orders,
@@ -239,7 +248,8 @@ def solve_token_pair_and_fee_token(
     else:
         # Otherwise orders buying b_buy_token for fee must be considered, so that
         # the b_buy_token imbalance due to fee and rounding can be bought.
-        assert len(f_orders) > 0
+        if len(f_orders) == 0:
+            return trivial_solution
 
         logger.debug("")
         logger.debug("=== Computing price of %s ===", b_buy_token)
@@ -322,7 +332,7 @@ def solve_token_pair_and_fee_token(
     logger.debug("=== Rounding ===")
     if not round_solution(prices, orders, fee):
         logger.warning("Could not round solution.")
-        return [], {}
+        return trivial_solution
 
     # Make sure the solution is correct.
     validate(accounts, orders, prices, fee)

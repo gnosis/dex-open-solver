@@ -74,4 +74,7 @@ def dump_solution(
 
     # Dump json.
     instance = stringify_numeric(instance)
+    for order in instance['orders']:
+        if 'orderID' in order.keys():
+            order['orderID'] = int(order['orderID'])
     json.dump(instance, solution_file, indent=4)

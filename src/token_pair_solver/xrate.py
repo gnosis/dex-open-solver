@@ -284,6 +284,12 @@ class SymbolicSolver:
 
     # Collect the local optima in case there is no match.
     # Also returns the id (1-2) of the root for debugging purposes
+    # The buy/sell amounts can be zero because of:
+    # a) Incompatible limit xrates
+    # b) Side constraints (min tradable amount, economic viability, etc.)
+    # When this happens, one of the limit xrates (roots 1,2) is optimal.
+    # If the cause of no matching is a), there can be other optimal points which
+    # are more interesting, e.g. for price estimation (see issue #25).
     def collect_local_optima_for_trivial_solution(self, b_orders, s_orders):
         xrates = [
             (self.root1([b_order], None), 0) for b_order in b_orders

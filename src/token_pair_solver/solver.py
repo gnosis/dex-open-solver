@@ -213,6 +213,11 @@ def solve_token_pair_and_fee_token(
     Also returns the prices found.
     """
     assert len(b_orders) > 0 and len(s_orders) > 0
+
+    # This function does not support s_buy_token = fee token.
+    if token_pair[1] == fee.token:
+        token_pair = tuple(reversed(token_pair))
+
     b_buy_token, s_buy_token = token_pair
 
     logger.debug("=== Order matching on token pair + fee token ===")

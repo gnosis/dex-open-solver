@@ -5,8 +5,7 @@ from decimal import Decimal as D
 from itertools import permutations
 
 from src.core.api import IntegerTraits, dump_solution, load_problem
-from src.core.orderbook import (compute_connected_tokens,
-                                compute_objective_value, update_accounts)
+from src.core.orderbook import (compute_objective_value, update_accounts)
 from src.token_pair_solver.solver import solve_token_pair_and_fee_token
 
 logger = logging.getLogger(__name__)
@@ -58,6 +57,18 @@ def match_token_pair_and_evaluate(token_pair, accounts, orders, fee):
     return (objective, (orders, prices))
 
 
+def eligible_token_pairs(orders, fee_token):
+    # Set of tokens directly connected to fee token.
+    directly_connected_tokens = {
+        o.buy_token for o in orders if o.sell_token == fee_token
+    }
+    directly_connected_tokens.add(fee_token)
+
+    for token_pair in permutations(directly_connected_tokens, 2):
+        if token_pair[0] in directly_connected_tokens:
+            yield token_pair
+
+
 def main(args):
     # Load dict from json.
     instance = json.load(args.instance, parse_float=D)
@@ -65,14 +76,11 @@ def main(args):
     # Load problem.
     accounts, orders, fee = load_problem(instance)
 
-    # Find all tokens connected to the fee token.
-    connected_tokens = compute_connected_tokens(orders, fee.token)
-
     # Find token pair + fee token matching.
     # TODO: parallelize this loop.
     best_objective = 0
     best_solution = ([], {})
-    for token_pair in permutations(connected_tokens, 2):
+    for token_pair in eligible_token_pairs(orders, fee.token):
         objective, solution = match_token_pair_and_evaluate(
             token_pair, accounts, orders, fee
         )

@@ -1,11 +1,12 @@
-from .order_util import IntegerTraits
-from .order import Order
-from typing import List, Dict, Tuple
 from fractions import Fraction as F
+from typing import Dict, List, Tuple
+
+from .order import Order
+from .order_util import IntegerTraits
 
 
-def compute_objective_values(prices, accounts_updated, orders, fee):
-    """Compute objective function values."""
+def compute_solution_metrics(prices, accounts_updated, orders, fee):
+    """Compute objective function values and other metrics."""
     # Init objective values.
     obj = {'volume': 0,
            'utility': 0,
@@ -150,3 +151,97 @@ def restrict_order_sell_amounts_by_balances(
 
 def count_nr_exec_orders(orders):
     return sum(order.buy_amount > 0 for order in orders)
+
+
+def compute_objective_value(prices, accounts_updated, orders, fee):
+    """Compute objective function value of solution."""
+    # Init objective values.
+    total_u = 0
+    total_umax = 0
+
+    for order in orders:
+        if prices[order.buy_token] is None or prices[order.sell_token] is None:
+            assert order.buy_amount == 0 and order.sell_amount == 0
+            continue
+        else:
+            sell_token_price = prices[order.sell_token]
+            buy_token_price = prices[order.buy_token]
+
+        xrate = F(buy_token_price, sell_token_price)
+
+        # Utility at current prices.
+        u = IntegerTraits.compute_utility_term(
+            order=order,
+            xrate=xrate,
+            buy_token_price=buy_token_price,
+            fee=fee
+        )
+
+        # Compute maximum possible utility analogously to the smart contract
+        # (i.e., depending on the remaining token balance after order execution).
+        if order.account_id is not None:
+            balance_updated = accounts_updated[order.account_id].get(order.sell_token, 0)
+        else:
+            balance_updated = 0
+        max_sell_amount_ = min(order.max_sell_amount, order.sell_amount + balance_updated)
+        umax = IntegerTraits.compute_max_utility_term(
+            order=order.with_max_sell_amount(max_sell_amount_),
+            xrate=xrate,
+            buy_token_price=buy_token_price,
+            fee=fee
+        )
+        umax = max(u, umax)
+
+        total_u += u
+        total_umax += umax
+
+    return 2 * total_u - total_umax
+
+
+# Update accounts from order execution.
+def update_accounts(accounts, orders):
+    for order in orders:
+        account_id = order.account_id
+        buy_token = order.buy_token
+        sell_token = order.sell_token
+        if order.buy_token not in accounts[account_id]:
+            accounts[account_id][order.buy_token] = 0
+        accounts[account_id][buy_token] = int(accounts[account_id][buy_token])
+        accounts[account_id][sell_token] = int(accounts[account_id][sell_token])
+        accounts[account_id][buy_token] += order.buy_amount
+        accounts[account_id][sell_token] -= order.sell_amount
+
+
+def compute_connected_tokens(orders, fee_token):
+    """Return the list of tokens connected to the fee_token."""
+    # Get subsets of tokens bought and sold.
+    tokens_sold = {o.sell_token for o in orders}
+    tokens_bought = {o.buy_token for o in orders}
+
+    # Create token->[token,...,token] lookup adjacency list,
+    # considering only tokens that are both sold and bought.
+    token_adjacency = {
+        token: set()
+        for token in tokens_sold.intersection(tokens_bought).union({fee_token})
+    }
+
+    for order in orders:
+        sell_token, buy_token = order.sell_token, order.buy_token
+        if all(t in token_adjacency.keys() for t in [sell_token, buy_token]):
+            token_adjacency[buy_token].add(sell_token)
+            token_adjacency[sell_token].add(buy_token)
+
+    # Breadth-first search: keep adding adjacent tokens until all visited.
+    # The loop below has at most len(tokens) iterations.
+    connected_tokens = [fee_token]
+    cur_token_idx = 0
+    while len(connected_tokens) > cur_token_idx:
+        cur_token = connected_tokens[cur_token_idx]
+        # new_tokens: All tokens directly connected to cur_token that are
+        # not yet visited but must be visited eventually.
+        new_tokens = token_adjacency[cur_token] - set(connected_tokens)
+        connected_tokens += list(new_tokens)
+        cur_token_idx += 1
+
+    # Return the set of visited tokens.
+    return set(connected_tokens)

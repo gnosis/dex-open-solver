@@ -34,9 +34,14 @@ For help on all options:
 python -m src.match -h
 ```
 
-Running example:
+Example of matching a specific token pair:
 ```
 python -m src.match solver_greedy/data/token_pair-1-1-1.json token-pair token0 token1
+```
+
+Example of matching the best token pair:
+```
+python -m src.match solver_greedy/data/token_pair-1-1-1.json best-token-pair
 ```
 
 ## Validating results

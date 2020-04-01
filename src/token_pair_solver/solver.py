@@ -204,7 +204,8 @@ def solve_token_pair_and_fee_token_given_exec_f_orders(
 
 
 def solve_token_pair_and_fee_token(
-    token_pair, accounts, b_orders, s_orders, f_orders, fee, xrate
+    token_pair, accounts, b_orders, s_orders, f_orders, fee,
+    xrate=None
 ):
     """Match orders between token pair and the fee token.
 

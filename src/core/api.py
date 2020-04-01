@@ -1,10 +1,14 @@
 import json
 import logging
 from collections import namedtuple
+from copy import deepcopy
 from fractions import Fraction as F
 
+from .order import Order
 from .order_util import IntegerTraits
-from .orderbook import compute_objective_values
+from .orderbook import (compute_solution_metrics,
+                        restrict_order_sell_amounts_by_balances,
+                        update_accounts)
 from .util import stringify_numeric
 
 logger = logging.getLogger(__name__)
@@ -14,6 +18,22 @@ Fee = namedtuple('Fee', ['token', 'value'])
 
 def load_fee(fee_dict):
     return Fee(token=fee_dict['token'], value=F(fee_dict['ratio']))
+
+
+def load_problem(instance):
+    """Load and setup a problem from an instance json."""
+    accounts = deepcopy(instance['accounts'])
+
+    orders = [
+        Order.load_from_dict(index, order_dict)
+        for index, order_dict in enumerate(instance['orders'])
+    ]
+
+    orders = restrict_order_sell_amounts_by_balances(orders, accounts)
+
+    fee = load_fee(instance['fee'])
+
+    return accounts, orders, fee
 
 
 def dump_solution(
@@ -29,19 +49,10 @@ def dump_solution(
 
     # Update accounts.
     accounts = instance['accounts']
-    for order in orders:
-        account_id = order.account_id
-        buy_token = order.buy_token
-        sell_token = order.sell_token
-        if order.buy_token not in accounts[account_id]:
-            accounts[account_id][order.buy_token] = 0
-        accounts[account_id][buy_token] = int(accounts[account_id][buy_token])
-        accounts[account_id][sell_token] = int(accounts[account_id][sell_token])
-        accounts[account_id][buy_token] += order.buy_amount
-        accounts[account_id][sell_token] -= order.sell_amount
+    update_accounts(accounts, orders)
 
     # Dump objective info.
-    instance['objVals'] = compute_objective_values(prices, accounts, orders, fee)
+    instance['objVals'] = compute_solution_metrics(prices, accounts, orders, fee)
 
     # Dump touched orders.
     orders = sorted(orders, key=lambda order: order.index)

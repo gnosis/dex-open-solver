@@ -29,6 +29,10 @@ def solve_token_pair(
     b_buy_token_price=None,
     max_nr_exec_orders=MAX_NR_EXEC_ORDERS
 ):
+    """Find optimal execution of b_orders and s_orders.
+
+    Sets b_orders/s_orders buy_amount and returns optimal exchange rate.
+    """
     assert len(b_orders) > 0 and len(s_orders) > 0
 
     b_buy_token, s_buy_token = token_pair
@@ -68,6 +72,18 @@ def solve_token_pair(
 def solve_b_buy_token_and_fee_token(
     b_buy_token_imbalance, b_buy_token, b_orders, f_orders, xrate, fee
 ):
+    """Find optimal execution of b_orders and f_orders.
+
+    The b_buy_token_imbalance is the amount (or an estimation) that needs
+    to be sold for fee. This is required since there may be no orders selling
+    b_buy_token for fee directly, meaning the price of b_buy_token would be
+    unbounded.
+
+    Future work: also consider other orders selling b_buy_token for fee.
+
+    Returns price of b_buy_token.
+    """
+
     # Compute b_buy_token_price such that it is possible to sell the b_buy_token
     # imbalance due to fee (plus a rounding buffer) for fee.
     # This fixes the final b_buy_token_price.
@@ -99,9 +115,102 @@ def solve_b_buy_token_and_fee_token(
     return b_buy_token_price
 
 
+def compute_nr_f_orders_to_execute(b_orders, s_orders, f_orders):
+    """Compute the number (interval) of f_orders that can be executed
+    while satisfying the maximum number of executed orders constraint.
+    """
+
+    # Pre-condition: the following constraint is assumed:
+    # nr_exec_b_orders + nr_exec_s_orders <= MAX_NR_EXEC_ORDERS
+    # which gives an upper bound for the number of executed b/s orders:
+    max_nr_exec_b_orders = count_nr_exec_orders(b_orders)
+    max_nr_exec_s_orders = count_nr_exec_orders(s_orders)
+
+    assert max_nr_exec_b_orders + max_nr_exec_s_orders <= MAX_NR_EXEC_ORDERS
+
+    # The actual constraint to enforce is:
+    # nr_b_exec_orders + nr_s_exec_orders + nr_f_exec_orders <= MAX_NR_EXEC_ORDERS
+    # <=> nr_f_exec_orders <= MAX_NR_EXEC_ORDERS - nr_b_exec_orders - nr_s_exec_orders
+
+    # Which is trivially satisfied if:
+    # nr_f_exec_orders <=
+    # MAX_NR_EXEC_ORDERS - max(nr_b_exec_orders) - max(nr_s_exec_orders)
+    min_max_nr_exec_f_orders = MAX_NR_EXEC_ORDERS \
+        - max_nr_exec_b_orders - max_nr_exec_s_orders + 1
+
+    # At least one b_order and one s_order must be matched.
+    max_nr_exec_f_orders = min(len(f_orders), MAX_NR_EXEC_ORDERS - 2)
+
+    # Try the highest number of f_orders as possible. In other words, do not constrain
+    # the number of f_orders to execute unless it is really necessary.
+    min_nr_exec_f_orders = min(min_max_nr_exec_f_orders, max_nr_exec_f_orders)
+
+    return (min_nr_exec_f_orders, max_nr_exec_f_orders)
+
+
+def solve_token_pair_and_fee_token_given_exec_f_orders(
+    nr_exec_f_orders,
+    approx_b_buy_token_imbalance,
+    token_pair,
+    b_orders, s_orders, f_orders,
+    xrate,
+    fee
+):
+    """Match orders between token pair and the fee token, assuming
+    that there will be at most `nr_exec_f_orders` orders selling
+    fee for b_buy_token.
+
+    Sets b_orders/s_orders/f_orders buy_amounts for the best execution.
+    Return the objective value f, the exchange rate b/s, and the exchange
+    rate b/f (i.e. the price of b_token).
+    """
+    b_buy_token, s_buy_token = token_pair
+
+    # Match fee_token <-> b_buy_token.
+    b_buy_token_price = solve_b_buy_token_and_fee_token(
+        approx_b_buy_token_imbalance,
+        b_buy_token, b_orders, f_orders[:nr_exec_f_orders],
+        xrate=xrate,
+        fee=fee
+    )
+
+    # Re-execute orders between token pair with the fixed b_buy_token_price,
+    # and adjusted max_nr_exec_orders.
+    # This fixes the final xrate, and therefore the final s_buy_token_price.
+    max_nr_bs_exec_orders = MAX_NR_EXEC_ORDERS - nr_exec_f_orders
+
+    logger.debug("")
+    logger.debug("=== (Re)solving %s -- %s ===", b_buy_token, s_buy_token)
+    logger.debug("\tWith price for %s\t:\t%s", b_buy_token, b_buy_token_price)
+    logger.debug("\tWith maximum nr bs orders\t:\t%s", max_nr_bs_exec_orders)
+
+    adjusted_xrate = solve_token_pair(
+        token_pair,
+        b_orders, s_orders,
+        fee,
+        xrate=xrate,
+        b_buy_token_price=b_buy_token_price,
+        max_nr_exec_orders=max_nr_bs_exec_orders
+    )
+
+    objective = compute_objective_rational(
+        b_orders, s_orders, f_orders,
+        adjusted_xrate,
+        b_buy_token_price,
+        fee
+    )
+
+    return (objective, adjusted_xrate, b_buy_token_price)
+
+
 def solve_token_pair_and_fee_token(
     token_pair, accounts, b_orders, s_orders, f_orders, fee, xrate
 ):
+    """Match orders between token pair and the fee token.
+
+    Sets b_orders/s_orders/f_orders integral buy_amounts for the best execution.
+    Also returns the prices found.
+    """
     assert len(b_orders) > 0 and len(s_orders) > 0
     b_buy_token, s_buy_token = token_pair
 
@@ -145,79 +254,39 @@ def solve_token_pair_and_fee_token(
             "Imbalance of %s\t:\t%s (due to fee)", b_buy_token, b_buy_token_imbalance
         )
 
-        # Until this point the following constraint was enforced:
-        # nr_exec_b_orders + nr_exec_s_orders <= MAX_NR_EXEC_ORDERS
-        # which gives an upper bound for the number of executed b/s orders:
-        max_nr_exec_b_orders = count_nr_exec_orders(b_orders)
-        max_nr_exec_s_orders = count_nr_exec_orders(s_orders)
-
-        assert max_nr_exec_b_orders + max_nr_exec_s_orders <= MAX_NR_EXEC_ORDERS
-
-        # The actual constraint to enforce is:
-        # nr_b_exec_orders + nr_s_exec_orders + nr_f_exec_orders <= MAX_NR_EXEC_ORDERS
-        # <=> nr_f_exec_orders <= MAX_NR_EXEC_ORDERS - nr_b_exec_orders - nr_s_exec_orders
-
-        # Which is trivially satisfied if:
-        # nr_f_exec_orders <=
-        # MAX_NR_EXEC_ORDERS - max(nr_b_exec_orders) - max(nr_s_exec_orders)
-        min_max_nr_exec_f_orders = MAX_NR_EXEC_ORDERS \
-            - max_nr_exec_b_orders - max_nr_exec_s_orders + 1
-
-        # At least one b_order and one s_order must be matched.
-        max_nr_exec_f_orders = min(len(f_orders), MAX_NR_EXEC_ORDERS - 2)
-
-        # Try the highest number of f_orders as possible.
-        min_nr_exec_f_orders = min(min_max_nr_exec_f_orders, max_nr_exec_f_orders)
+        # Compute the number of f_orders that can be executed so that the maximum number
+        # of executed orders constraint is satisfied.
+        min_nr_exec_f_orders, max_nr_exec_f_orders = \
+            compute_nr_f_orders_to_execute(b_orders, s_orders, f_orders)
 
         logger.debug("")
         logger.debug(
             "=== Solving %s -- %s (nr_exec_f_orders \u2208 [%s, %s]) ===",
             b_buy_token, fee.token, min_nr_exec_f_orders, max_nr_exec_f_orders
         )
+
+        # Find number of f_orders that leads to higher objective value.
         f_orders = sorted(f_orders, key=lambda f_order: f_order.max_xrate, reverse=True)
         best_objective = None
-        best_solution = (xrate, b_orders, s_orders, f_orders)
+        best_solution = (xrate, None, b_orders, s_orders, f_orders)
         for nr_exec_f_orders in range(min_nr_exec_f_orders, max_nr_exec_f_orders + 1):
-            # Match fee_token <-> b_buy_token.
-            b_buy_token_price = solve_b_buy_token_and_fee_token(
-                b_buy_token_imbalance,
-                b_buy_token, b_orders, f_orders[:nr_exec_f_orders],
-                xrate=xrate,
-                fee=fee
-            )
-
-            # Re-execute orders between token pair with the fixed b_buy_token_price,
-            # and adjusted max_nr_exec_orders.
-            # This fixes the final xrate, and therefore the final s_buy_token_price.
-            max_nr_bs_exec_orders = MAX_NR_EXEC_ORDERS - nr_exec_f_orders
-
-            logger.debug("")
-            logger.debug("=== (Re)solving %s -- %s ===", b_buy_token, s_buy_token)
-            logger.debug("\tWith price for %s\t:\t%s", b_buy_token, b_buy_token_price)
-            logger.debug("\tWith maximum nr bs orders\t:\t%s", max_nr_bs_exec_orders)
-
-            adjusted_xrate = solve_token_pair(
-                token_pair,
-                b_orders, s_orders,
-                fee,
-                xrate=xrate,
-                b_buy_token_price=b_buy_token_price,
-                max_nr_exec_orders=max_nr_bs_exec_orders
-            )
-
-            objective = compute_objective_rational(
-                b_orders, s_orders, f_orders,
-                xrate,
-                b_buy_token_price,
-                fee
-            )
+            # Compute objective value and solution given current nr_exec_f_orders.
+            objective, adjusted_xrate, b_buy_token_price = \
+                solve_token_pair_and_fee_token_given_exec_f_orders(
+                    nr_exec_f_orders, b_buy_token_imbalance,
+                    token_pair, b_orders, s_orders, f_orders, xrate, fee
+                )
 
             logger.debug("Objective\t:\t%s\t[best=%s]", objective, best_objective)
+
+            # Update best solution found so far if necessary.
             if best_objective is None or objective >= best_objective:
                 best_objective = objective
-                best_solution = deepcopy((adjusted_xrate, b_orders, s_orders, f_orders))
+                best_solution = deepcopy(
+                    (adjusted_xrate, b_buy_token_price, b_orders, s_orders, f_orders)
+                )
 
-        xrate, b_orders, s_orders, f_orders = best_solution
+        xrate, b_buy_token_price, b_orders, s_orders, f_orders = best_solution
 
         logger.debug("Price of %s\t:\t%s", b_buy_token, b_buy_token_price)
         logger.debug("Price of %s\t:\t%s", s_buy_token, b_buy_token_price / xrate)

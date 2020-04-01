@@ -13,6 +13,8 @@ def rounding_buffer(
     b_buy_token_price,
     fee
 ):
+    """A context manager for handling orders with adjusted max_sell_amounts."""
+
     # Save original max sell amounts.
     b_max_sell_amounts = [b_order.max_sell_amount for b_order in b_orders]
     s_max_sell_amounts = [s_order.max_sell_amount for s_order in s_orders]

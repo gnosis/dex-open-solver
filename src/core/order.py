@@ -93,14 +93,14 @@ class Order(object):
 
     @classmethod
     def load_from_dict(cls, index, order_dict):
-        min_buy_amount = max(MIN_TRADABLE_AMOUNT, F(order_dict['buyAmount']))
+        buy_amount_ceiled = max(MIN_TRADABLE_AMOUNT, F(order_dict['buyAmount']))
         return Order(
             index=index,
             account_id=order_dict['accountID'],
             buy_token=order_dict['buyToken'],
             sell_token=order_dict['sellToken'],
             max_sell_amount=F(order_dict['sellAmount']),
-            max_xrate=F(order_dict['sellAmount']) / min_buy_amount
+            max_xrate=F(order_dict['sellAmount']) / buy_amount_ceiled
         )
 
     def update_order_dict(self, order_dict):

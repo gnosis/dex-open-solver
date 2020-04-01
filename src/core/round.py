@@ -1,10 +1,15 @@
 import logging
 from collections import OrderedDict
-from math import floor
+from fractions import Fraction as F
+from math import ceil, floor
+from typing import Dict, List, Tuple
 
 import networkx as nx
 
-from .constants import MIN_TRADABLE_AMOUNT
+from .api import Fee
+from .constants import (MAX_ROUNDING_VOLUME, MIN_TRADABLE_AMOUNT,
+                        PRICE_ESTIMATION_ERROR)
+from .order import Order
 from .order_util import IntegerTraits
 
 logger = logging.getLogger(__name__)
@@ -19,6 +24,73 @@ def compute_token_balances(tokens, orders):
         token_balances[order.sell_token] += order.sell_amount
 
     return token_balances
+
+
+def setup_rounding_buffer(
+    orders: List[Order],
+    connected_tokens: List[str],
+    estimated_token_prices: Dict[str, F],
+    fee: Fee
+) -> Tuple[Dict[str, Dict], List[Dict]]:
+    """Introduce rounding buffer for order sell amounts.
+
+    Args:
+        orders: List of orders.
+        connected_tokens: List of tokens connected to the fee token.
+        estimated_token_prices: Dict of estimated prices for all tokens.
+        fee: Fee namedtuple.
+
+    Returns:
+        The updated orders.
+
+    """
+    # Compute amount of all tokens equivalent to MAX_ROUNDING_VOLUME.
+    max_rounding_amounts = {}
+    fee_token_price = estimated_token_prices[fee.token]
+    for t in connected_tokens:
+        assert t in estimated_token_prices
+
+        estimated_price_in_fee_token = F(estimated_token_prices[t]) / F(fee_token_price)
+        max_rounding_amount = F(MAX_ROUNDING_VOLUME) / estimated_price_in_fee_token
+
+        max_rounding_amounts[t] = ceil(max_rounding_amount)
+        assert max_rounding_amounts[t] >= 1
+
+        # logging.info("Maximum assumed rounding error for [%s] : %20d"
+        #             % (t, max_rounding_amounts[t].quantize(Decimal('1e-4'))))
+
+    # Apply rounding buffer to order max sell amounts.
+    for o in orders:
+        tS, tB = o.sell_token, o.buy_token
+
+        if not all(t in connected_tokens for t in [tS, tB]):
+            # Order will never be touched, because of no connection to fee token.
+            continue
+
+        # a) Compute rounding buffer:
+        # In the current float->int solution rounding, executed buy amounts are
+        # adjusted, then executed sell amounts recomputed. We thus need to make
+        # sure that expected adjustments on the buy-side will not lead to
+        # violations on the sell-side (i.e., exceeding maximum sell amount).
+        estimated_xrate = estimated_token_prices[tB] / estimated_token_prices[tS]
+        rounding_buffer = max_rounding_amounts[tB] * estimated_xrate
+        rounding_buffer = rounding_buffer * PRICE_ESTIMATION_ERROR**2
+        rounding_buffer = ceil(rounding_buffer)
+        assert rounding_buffer >= 1
+
+        # b) Reduce order max sell amounts.
+        old_max_sell_amount = o.max_sell_amount
+        new_max_sell_amount = max(old_max_sell_amount - rounding_buffer, 0)
+
+        logging.info(
+            "Reducing max sell amount [%s] of order <%s> : %25d --> %25d",
+            tS, o.index, old_max_sell_amount, new_max_sell_amount
+        )
+
+        assert new_max_sell_amount < old_max_sell_amount or old_max_sell_amount == 0
+        o.max_sell_amount = new_max_sell_amount
+
+    return orders
 
 
 def compute_spanning_order_arborescence(orders, fee):

@@ -204,10 +204,7 @@ def round_solution(prices, orders, fee):
             logging.debug("\t%5s : %28d", token, balance)
 
         # If it is not possible to round, return false.
-        # This can happen due to:
-        # a) Not enough fee can be sold for b_buy_token.
-        # b) There's currently no max_sell_amount buffer.
-        # TODO: fix b).
+        # This can if rounding buffer was too small.
         if token_balances[leaf_token] != 0:
             return False
 

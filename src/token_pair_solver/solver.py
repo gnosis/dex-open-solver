@@ -214,7 +214,7 @@ def solve_token_pair_and_fee_token(
     """
     trivial_solution = [], dict()
 
-    if len(b_orders) > 0 or len(s_orders):
+    if len(b_orders) == 0 or len(s_orders) == 0:
         return trivial_solution
 
     # This function does not support s_buy_token = fee token.

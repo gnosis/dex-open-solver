@@ -2,7 +2,6 @@ import json
 import logging
 from collections import namedtuple
 from fractions import Fraction as F
-
 from .order_util import IntegerTraits
 from .orderbook import compute_objective_values
 from .util import stringify_numeric
@@ -63,4 +62,7 @@ def dump_solution(
 
     # Dump json.
     instance = stringify_numeric(instance)
+    for order in instance['orders']:
+        if 'orderID' in order.keys():
+            order['orderID'] = int(order['orderID'])
     json.dump(instance, solution_file, indent=4)

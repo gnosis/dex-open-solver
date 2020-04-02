@@ -2,10 +2,10 @@ import json
 import logging
 from copy import deepcopy
 from decimal import Decimal as D
-from itertools import permutations
+from functools import reduce
 
 from src.core.api import IntegerTraits, dump_solution, load_problem
-from src.core.orderbook import (compute_objective_value, update_accounts)
+from src.core.orderbook import compute_objective_value, update_accounts
 from src.token_pair_solver.solver import solve_token_pair_and_fee_token
 
 logger = logging.getLogger(__name__)
@@ -64,9 +64,13 @@ def eligible_token_pairs(orders, fee_token):
     }
     directly_connected_tokens.add(fee_token)
 
-    for token_pair in permutations(directly_connected_tokens, 2):
-        if token_pair[0] in directly_connected_tokens:
-            yield token_pair
+    # A set with all tokens.
+    all_tokens = reduce(lambda x, y: x | y, (o.tokens for o in orders))
+
+    for b_token in directly_connected_tokens:
+        for s_token in all_tokens - {b_token}:
+            print(b_token, s_token)
+            yield (b_token, s_token)
 
 
 def main(args):

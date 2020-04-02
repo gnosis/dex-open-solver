@@ -47,6 +47,10 @@ class Order(object):
         return self._sell_token
 
     @property
+    def tokens(self):
+        return {self._buy_token, self._sell_token}
+
+    @property
     def max_sell_amount(self):
         return self._max_sell_amount
 

@@ -2,7 +2,7 @@ import logging
 from collections import OrderedDict
 from fractions import Fraction as F
 from math import ceil, floor
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 import networkx as nx
 
@@ -31,7 +31,7 @@ def setup_rounding_buffer(
     connected_tokens: List[str],
     estimated_token_prices: Dict[str, F],
     fee: Fee
-) -> Tuple[Dict[str, Dict], List[Dict]]:
+) -> List[Order]:
     """Introduce rounding buffer for order sell amounts.
 
     Args:
@@ -204,7 +204,7 @@ def round_solution(prices, orders, fee):
             logging.debug("\t%5s : %28d", token, balance)
 
         # If it is not possible to round, return false.
-        # This can if rounding buffer was too small.
+        # This can happen if rounding buffer was too small.
         if token_balances[leaf_token] != 0:
             return False
 

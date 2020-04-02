@@ -8,4 +8,7 @@ COPY ./src ./src
 COPY ./requirements.txt ./requirements.txt
 
 RUN pip3 install --no-cache-dir -r requirements.txt
+## making python3 available with the command python
+RUN echo -e '#!/user/bin\npython3' > /usr/bin/python && \
+    chmod +x /usr/bin/python
 

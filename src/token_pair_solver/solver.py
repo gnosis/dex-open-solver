@@ -220,6 +220,7 @@ def solve_token_pair_and_fee_token(
     # This function does not support s_buy_token = fee token.
     if token_pair[1] == fee.token:
         token_pair = tuple(reversed(token_pair))
+        b_orders, s_orders = s_orders, b_orders
 
     b_buy_token, s_buy_token = token_pair
 

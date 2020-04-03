@@ -13,7 +13,7 @@ def test_has_non_trivial_solution(local_instance):
     with open(local_instance, 'r') as fd:
         args = Namespace(
             instance=fd,
-            token_pair=('token0', 'token1'),
+            token_pair=('T0000', 'T0001'),
             solution=solution,
             xrate=None
         )

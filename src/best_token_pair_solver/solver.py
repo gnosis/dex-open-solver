@@ -68,7 +68,7 @@ def eligible_token_pairs(orders, fee_token):
     all_tokens = reduce(lambda x, y: x | y, (o.tokens for o in orders))
 
     for b_token in directly_connected_tokens:
-        for s_token in all_tokens - {b_token}:
+        for s_token in all_tokens - {b_token, fee_token}:
             print(b_token, s_token)
             yield (b_token, s_token)
 

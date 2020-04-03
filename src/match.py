@@ -5,6 +5,8 @@ import tempfile
 from .core.util import LoggerFormatter
 from .token_pair_solver.solver import \
     setup_arg_parser as setup_token_pair_solver_parser
+from .best_token_pair_solver.solver import \
+    setup_arg_parser as setup_best_token_pair_parser
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +52,7 @@ if __name__ == '__main__':
 
     setup_token_pair_solver_parser(subparsers)
 
-    # TODO: setup_best_token_pair_parser(subparsers)
+    setup_best_token_pair_parser(subparsers)
 
     args = parser.parse_args()
     log_level = getattr(logging, args.logging)

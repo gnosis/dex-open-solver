@@ -1,31 +1,31 @@
 {
-  "tokens": { "T0000": null, "T0001": null },
-  "refToken": "T0000",
+  "tokens": { "token0": null, "token1": null },
+  "refToken": "token0",
   "accounts": {
     "0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1": {
-      "T0000": "3000000000000000000000"
+      "token0": "3000000000000000000000"
     },
     "0xffcf8fdee72ac11b5c542428b35eef5769c409f0": {
-      "T0001": "3000000000000000000000"
+      "token1": "3000000000000000000000"
     }
   },
   "orders": [
     {
       "accountID": "0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1",
-      "sellToken": "T0000",
-      "buyToken": "T0001",
+      "sellToken": "token0",
+      "buyToken": "token1",
       "sellAmount": "2000000000000000000000",
       "buyAmount": "999000000000000000000",
       "orderID": 0
     },
     {
       "accountID": "0xffcf8fdee72ac11b5c542428b35eef5769c409f0",
-      "sellToken": "T0001",
-      "buyToken": "T0000",
+      "sellToken": "token1",
+      "buyToken": "token0",
       "sellAmount": "999000000000000000000",
       "buyAmount": "1996000000000000000000",
       "orderID": 0
     }
   ],
-  "fee": { "token": "T0000", "ratio": 0.001 }
+  "fee": { "token": "token0", "ratio": 0.001 }
 }

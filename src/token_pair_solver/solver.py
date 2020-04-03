@@ -33,7 +33,8 @@ def solve_token_pair(
 
     Sets b_orders/s_orders buy_amount and returns optimal exchange rate.
     """
-    assert len(b_orders) > 0 and len(s_orders) > 0
+    if (len(b_orders) == 0 or len(s_orders) == 0):
+        return None
 
     b_buy_token, s_buy_token = token_pair
 
@@ -367,6 +368,7 @@ def main(args):
     )
 
     logger.info("Solution file is '%s'.", args.solution.name)
+    return instance
 
 
 def setup_arg_parser(subparsers):

@@ -18,4 +18,5 @@ def test_has_non_trivial_solution(local_instance):
             xrate=None
         )
         solution = main(args)
+
         assert any(int(order["execSellAmount"]) > 0 for order in solution["orders"])

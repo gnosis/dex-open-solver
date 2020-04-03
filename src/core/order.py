@@ -55,6 +55,11 @@ class Order(object):
         assert new_max_sell_amount <= self._max_sell_amount
         self._max_sell_amount = new_max_sell_amount
 
+    # This method is equal to the max_sell_amount setter above
+    # except it allows the max sell amount to be increased.
+    def force_set_max_sell_amount(self, new_max_sell_amount):
+        self._max_sell_amount = new_max_sell_amount
+
     @property
     def max_xrate(self):
         return self._max_xrate

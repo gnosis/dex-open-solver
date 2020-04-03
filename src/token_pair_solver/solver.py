@@ -6,16 +6,17 @@ from fractions import Fraction as F
 
 from src.core.api import dump_solution
 from src.core.constants import FEE_TOKEN_PRICE, MAX_NR_EXEC_ORDERS
+from src.core.orderbook import count_nr_exec_orders
 from src.core.round import round_solution
 from src.core.validation import validate
-from src.core.orderbook import count_nr_exec_orders
 
 from .amount import compute_buy_amounts
 from .api import load_problem
-from .orderbook import (IntegerTraits, RationalTraits,
+from .orderbook import (IntegerTraits, RationalTraits, aggregate_orders_prices,
                         compute_b_buy_token_imbalance,
                         compute_objective_rational)
 from .price import compute_token_price_to_cover_imbalance, create_market_order
+from .round import rounding_buffer
 from .xrate import find_best_xrate
 
 logger = logging.getLogger(__name__)
@@ -70,7 +71,7 @@ def solve_token_pair(
 
 
 def solve_b_buy_token_and_fee_token(
-    b_buy_token_imbalance, b_buy_token, b_orders, f_orders, xrate, fee
+    b_buy_token_imbalance, b_buy_token, b_orders, f_orders, fee
 ):
     """Find optimal execution of b_orders and f_orders.
 
@@ -170,7 +171,6 @@ def solve_token_pair_and_fee_token_given_exec_f_orders(
     b_buy_token_price = solve_b_buy_token_and_fee_token(
         approx_b_buy_token_imbalance,
         b_buy_token, b_orders, f_orders[:nr_exec_f_orders],
-        xrate=xrate,
         fee=fee
     )
 
@@ -184,14 +184,17 @@ def solve_token_pair_and_fee_token_given_exec_f_orders(
     logger.debug("\tWith price for %s\t:\t%s", b_buy_token, b_buy_token_price)
     logger.debug("\tWith maximum nr bs orders\t:\t%s", max_nr_bs_exec_orders)
 
-    adjusted_xrate = solve_token_pair(
-        token_pair,
-        b_orders, s_orders,
-        fee,
-        xrate=xrate,
-        b_buy_token_price=b_buy_token_price,
-        max_nr_exec_orders=max_nr_bs_exec_orders
-    )
+    # Execute orders with slightly decreased max_sell_amounts so that later on
+    # is possible to round solution without violating the max sell amount constraint.
+    with rounding_buffer(token_pair, b_orders, s_orders, xrate, b_buy_token_price, fee):
+        adjusted_xrate = solve_token_pair(
+            token_pair,
+            b_orders, s_orders,
+            fee,
+            xrate=xrate,
+            b_buy_token_price=b_buy_token_price,
+            max_nr_exec_orders=max_nr_bs_exec_orders
+        )
 
     objective = compute_objective_rational(
         b_orders, s_orders, f_orders,
@@ -214,7 +217,7 @@ def solve_token_pair_and_fee_token(
     """
     trivial_solution = [], dict()
 
-    if len(b_orders) > 0 or len(s_orders):
+    if len(b_orders) == 0 or len(s_orders) == 0:
         return trivial_solution
 
     # This function does not support s_buy_token = fee token.
@@ -317,15 +320,10 @@ def solve_token_pair_and_fee_token(
         )
         logger.debug("\t%s", [f_order.buy_amount for f_order in f_orders])
 
-    # Aggregate orders.
-    orders = b_orders + s_orders + f_orders
-
-    # Aggregate prices.
-    prices = {
-        fee.token: FEE_TOKEN_PRICE,
-        b_buy_token: b_buy_token_price,
-        s_buy_token: b_buy_token_price / xrate
-    }
+    # Aggregate orders and prices.
+    orders, prices = aggregate_orders_prices(
+        token_pair, b_orders, s_orders, f_orders, xrate, b_buy_token_price, fee
+    )
 
     # Integrate sell_amounts and prices in solution, and round.
     logger.debug("")

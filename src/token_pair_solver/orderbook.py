@@ -111,3 +111,25 @@ def compute_objective_rational(*args, **kwargs):
 
 def compute_objective_integer(*args, **kwargs):
     return compute_objective(*args, **kwargs, arith_traits=IntegerTraits)
+
+
+def aggregate_orders_prices(
+    token_pair,
+    b_orders, s_orders, f_orders,
+    xrate,
+    b_buy_token_price,
+    fee
+):
+    b_buy_token, s_buy_token = token_pair
+
+    # Aggregate orders.
+    orders = b_orders + s_orders + f_orders
+
+    # Aggregate prices.
+    prices = {
+        fee.token: FEE_TOKEN_PRICE,
+        b_buy_token: b_buy_token_price,
+        s_buy_token: b_buy_token_price / xrate
+    }
+
+    return orders, prices

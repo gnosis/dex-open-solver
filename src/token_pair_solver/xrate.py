@@ -14,7 +14,7 @@ from fractions import Fraction as F
 from itertools import groupby
 from math import sqrt
 
-from src.core.constants import FEE_TOKEN_PRICE
+from src.core.config import Config
 
 from .amount import compute_buy_amounts
 from .orderbook import compute_objective_rational
@@ -181,7 +181,7 @@ class SymbolicSolver:
 
         f = 1 - self.fee.value
 
-        fp = FEE_TOKEN_PRICE
+        fp = Config.FEE_TOKEN_PRICE
         c = 2 + f + (1 - f**2) / (2 * f * fp)
         r = 4 * b_yb_sum / (f * (c * s_pi * b_yb_sum + s_yb + t))
         return r

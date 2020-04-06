@@ -7,8 +7,7 @@ from typing import Dict, List
 import networkx as nx
 
 from .api import Fee
-from .constants import (MAX_ROUNDING_VOLUME, MIN_TRADABLE_AMOUNT,
-                        PRICE_ESTIMATION_ERROR)
+from .config import Config
 from .order import Order
 from .order_util import IntegerTraits
 
@@ -51,7 +50,8 @@ def setup_rounding_buffer(
         assert t in estimated_token_prices
 
         estimated_price_in_fee_token = F(estimated_token_prices[t]) / F(fee_token_price)
-        max_rounding_amount = F(MAX_ROUNDING_VOLUME) / estimated_price_in_fee_token
+        max_rounding_amount = \
+            F(Config.MAX_ROUNDING_VOLUME) / estimated_price_in_fee_token
 
         max_rounding_amounts[t] = ceil(max_rounding_amount)
         assert max_rounding_amounts[t] >= 1
@@ -74,7 +74,7 @@ def setup_rounding_buffer(
         # violations on the sell-side (i.e., exceeding maximum sell amount).
         estimated_xrate = estimated_token_prices[tB] / estimated_token_prices[tS]
         rounding_buffer = max_rounding_amounts[tB] * estimated_xrate
-        rounding_buffer = rounding_buffer * PRICE_ESTIMATION_ERROR**2
+        rounding_buffer = rounding_buffer * Config.PRICE_ESTIMATION_ERROR**2
         rounding_buffer = ceil(rounding_buffer)
         assert rounding_buffer >= 1
 
@@ -164,12 +164,12 @@ def round_solution(prices, orders, fee):
 
             # Amount to be subtracted from order.buy_amount
             buy_amount_delta = min(
-                order.buy_amount - MIN_TRADABLE_AMOUNT,
+                order.buy_amount - Config.MIN_TRADABLE_AMOUNT,
                 -token_balances[leaf_token]
             )
 
             # Skip order if rounding would lead to violation of minimum tradable amount.
-            if order.buy_amount - buy_amount_delta < MIN_TRADABLE_AMOUNT:
+            if order.buy_amount - buy_amount_delta < Config.MIN_TRADABLE_AMOUNT:
                 continue
 
             # Skip order if rounding would lead to violation of max sell amount.

@@ -5,7 +5,7 @@ from decimal import Decimal as D
 from fractions import Fraction as F
 
 from src.core.api import dump_solution
-from src.core.constants import FEE_TOKEN_PRICE, MAX_NR_EXEC_ORDERS
+from src.core.config import Config
 from src.core.orderbook import count_nr_exec_orders
 from src.core.round import round_solution
 from src.core.validation import validate
@@ -28,19 +28,27 @@ def solve_token_pair(
     fee,
     xrate=None,
     b_buy_token_price=None,
-    max_nr_exec_orders=MAX_NR_EXEC_ORDERS
+    max_nr_exec_orders=None
 ):
     """Find optimal execution of b_orders and s_orders.
 
     Sets b_orders/s_orders buy_amount and returns optimal exchange rate.
     """
-    if (len(b_orders) == 0 or len(s_orders) == 0):
+
+    # NOTE: do not add this as a default parameter above, since
+    # default parameters are evaluated when the function is defined, and
+    # not when it is called. This means that runtime changes to the Config
+    # singleton would not be reflected.
+    if max_nr_exec_orders is None:
+        max_nr_exec_orders = Config.MAX_NR_EXEC_ORDERS
+
+    if len(b_orders) == 0 or len(s_orders) == 0:
         return None
 
     b_buy_token, s_buy_token = token_pair
 
     if b_buy_token == fee.token:
-        b_buy_token_price = FEE_TOKEN_PRICE
+        b_buy_token_price = Config.FEE_TOKEN_PRICE
 
     # Compute optimal exchange rate if not given.
     if xrate is None:
@@ -106,7 +114,7 @@ def solve_b_buy_token_and_fee_token(
 
     # 2/2: execute the artifical order against existing orders buying b_buy_token
     # for fee (i.e. f_orders).
-    fee_xrate = F(FEE_TOKEN_PRICE, b_buy_token_price)
+    fee_xrate = F(Config.FEE_TOKEN_PRICE, b_buy_token_price)
     fee_xrate = solve_token_pair(
         (fee.token, b_buy_token),
         [fee_debt_order], f_orders, fee,
@@ -128,7 +136,7 @@ def compute_nr_f_orders_to_execute(b_orders, s_orders, f_orders):
     max_nr_exec_b_orders = count_nr_exec_orders(b_orders)
     max_nr_exec_s_orders = count_nr_exec_orders(s_orders)
 
-    assert max_nr_exec_b_orders + max_nr_exec_s_orders <= MAX_NR_EXEC_ORDERS
+    assert max_nr_exec_b_orders + max_nr_exec_s_orders <= Config.MAX_NR_EXEC_ORDERS
 
     # The actual constraint to enforce is:
     # nr_b_exec_orders + nr_s_exec_orders + nr_f_exec_orders <= MAX_NR_EXEC_ORDERS
@@ -137,11 +145,11 @@ def compute_nr_f_orders_to_execute(b_orders, s_orders, f_orders):
     # Which is trivially satisfied if:
     # nr_f_exec_orders <=
     # MAX_NR_EXEC_ORDERS - max(nr_b_exec_orders) - max(nr_s_exec_orders)
-    min_max_nr_exec_f_orders = MAX_NR_EXEC_ORDERS \
+    min_max_nr_exec_f_orders = Config.MAX_NR_EXEC_ORDERS \
         - max_nr_exec_b_orders - max_nr_exec_s_orders + 1
 
     # At least one b_order and one s_order must be matched.
-    max_nr_exec_f_orders = min(len(f_orders), MAX_NR_EXEC_ORDERS - 2)
+    max_nr_exec_f_orders = min(len(f_orders), Config.MAX_NR_EXEC_ORDERS - 2)
 
     # Try the highest number of f_orders as possible. In other words, do not constrain
     # the number of f_orders to execute unless it is really necessary.
@@ -178,7 +186,7 @@ def solve_token_pair_and_fee_token_given_exec_f_orders(
     # Re-execute orders between token pair with the fixed b_buy_token_price,
     # and adjusted max_nr_exec_orders.
     # This fixes the final xrate, and therefore the final s_buy_token_price.
-    max_nr_bs_exec_orders = MAX_NR_EXEC_ORDERS - nr_exec_f_orders
+    max_nr_bs_exec_orders = Config.MAX_NR_EXEC_ORDERS - nr_exec_f_orders
 
     logger.debug("")
     logger.debug("=== (Re)solving %s -- %s ===", b_buy_token, s_buy_token)
@@ -249,7 +257,7 @@ def solve_token_pair_and_fee_token(
         # If b_buy_token is fee, then there is only two sets of orders,
         # b_orders, and s_orders, for which buy_amounts were computed above.
         f_orders = []
-        b_buy_token_price = FEE_TOKEN_PRICE
+        b_buy_token_price = Config.FEE_TOKEN_PRICE
     else:
         # Otherwise orders buying b_buy_token for fee must be considered, so that
         # the b_buy_token imbalance due to fee and rounding can be bought.

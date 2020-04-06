@@ -1,7 +1,7 @@
 from fractions import Fraction as F
 from math import ceil, floor
 
-from src.core.constants import FEE_TOKEN_PRICE
+from src.core.config import Config
 from src.core.order import Order
 
 from .xrate import find_best_xrate
@@ -53,12 +53,12 @@ def compute_token_price_to_cover_imbalance(
         # b_buy_token_price must rounded up implying that
         # xrate=[fee_token_price / b_buy_token_price] is rounded down
         # (and therefore does not violate fee_debt_order limit xrate).
-        buy_token_price = ceil(FEE_TOKEN_PRICE / xrate)
+        buy_token_price = ceil(Config.FEE_TOKEN_PRICE / xrate)
     else:
         # Otherwise it is possible that the optimal xrate is the limit
         # xrate of some f_order, in which case b_buy_token_price must be rounded
         # down implying 1/xrate=[b_buy_token_price / fee_token_price] is rounded down
         # (and therefore does not violate the limit xrate of that f_order).
-        buy_token_price = floor(FEE_TOKEN_PRICE / xrate)
+        buy_token_price = floor(Config.FEE_TOKEN_PRICE / xrate)
 
     return buy_token_price

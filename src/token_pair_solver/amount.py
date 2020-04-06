@@ -10,14 +10,14 @@ where X is an array of buy amounts.
 """
 import logging
 
-from src.core.constants import MIN_TRADABLE_AMOUNT, MAX_NR_EXEC_ORDERS
+from src.core.config import Config
 
 logger = logging.getLogger(__name__)
 
 # To account for the possibility that the minimum tradable amount
 # constraint will end up being violated when rounding the solution to
 # integers, the effective lower bound is conservatively increased here.
-MIN_TRADABLE_AMOUNT = int(MIN_TRADABLE_AMOUNT * 1.001)
+MIN_TRADABLE_AMOUNT = int(Config.MIN_TRADABLE_AMOUNT * 1.001)
 
 
 #############################################################################
@@ -301,13 +301,20 @@ def undo_order_execution_violating_min_tradable_amount_constraint(
 
 
 def compute_buy_amounts(
-    xrate, b_orders, s_orders, fee, max_nr_exec_orders=MAX_NR_EXEC_ORDERS
+    xrate, b_orders, s_orders, fee, max_nr_exec_orders=None
 ):
     """Compute optimal buy amounts for two sets of orders between two tokens.
 
     Convention:
     xrate = p(b_token) / p(s_token) = (s_amount / b_amount) * (1 - fee).
     """
+
+    # NOTE: do not add this as a default parameter above, since
+    # default parameters are evaluated when the function is defined, and
+    # not when it is called. This means that runtime changes to the Config
+    # singleton would not be reflected.
+    if max_nr_exec_orders is None:
+        max_nr_exec_orders = Config.MAX_NR_EXEC_ORDERS
 
     # Reset buy amounts to zero.
     for b_order in b_orders:

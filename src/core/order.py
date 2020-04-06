@@ -1,7 +1,7 @@
 """Class/Functions for handling Order's."""
 from copy import copy
 from fractions import Fraction as F
-from .constants import MIN_TRADABLE_AMOUNT
+from .config import Config
 
 
 class Order(object):
@@ -102,7 +102,10 @@ class Order(object):
 
     @classmethod
     def load_from_dict(cls, index, order_dict):
-        buy_amount_ceiled = max(MIN_TRADABLE_AMOUNT, F(order_dict['buyAmount']))
+        buy_amount_ceiled = max(
+            Config.MIN_TRADABLE_AMOUNT,
+            F(order_dict['buyAmount'])
+        )
         return Order(
             index=index,
             account_id=order_dict['accountID'],

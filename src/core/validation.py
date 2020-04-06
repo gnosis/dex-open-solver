@@ -1,6 +1,6 @@
 from fractions import Fraction as F
 
-from .constants import MAX_NR_EXEC_ORDERS, MIN_TRADABLE_AMOUNT
+from .config import Config
 from .orderbook import count_nr_exec_orders
 
 
@@ -12,8 +12,8 @@ def validate_order_constraints(order, buy_amount, sell_amount):
     assert sell_amount <= order.max_sell_amount
 
     # Minimum tradable amount constraint
-    assert buy_amount == 0 or buy_amount >= MIN_TRADABLE_AMOUNT
-    assert sell_amount == 0 or sell_amount >= MIN_TRADABLE_AMOUNT
+    assert buy_amount == 0 or buy_amount >= Config.MIN_TRADABLE_AMOUNT
+    assert sell_amount == 0 or sell_amount >= Config.MIN_TRADABLE_AMOUNT
 
 
 def validate(
@@ -21,8 +21,15 @@ def validate(
     orders,
     prices,
     fee,
-    max_nr_exec_orders=MAX_NR_EXEC_ORDERS
+    max_nr_exec_orders=None
 ):
+    # NOTE: do not add this as a default parameter above, since
+    # default parameters are evaluated when the function is defined, and
+    # not when it is called. This means that runtime changes to the Config
+    # singleton would not be reflected.
+    if max_nr_exec_orders is None:
+        max_nr_exec_orders = Config.MAX_NR_EXEC_ORDERS
+
     assert all(price.denominator == 1 for price in prices.values())
 
     assert count_nr_exec_orders(orders) <= max_nr_exec_orders

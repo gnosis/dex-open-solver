@@ -1,7 +1,7 @@
 """Functions for orderbooks containing 2 tokens (and optionally the fee token)."""
 from fractions import Fraction as F
 
-from src.core.constants import FEE_TOKEN_PRICE
+from src.core.config import Config
 from src.core.order_util import IntegerTraits, RationalTraits
 
 
@@ -85,7 +85,7 @@ def compute_objective(
     # 2u-umax terms for f_orders
     t3 = compute_objective_for_orders(
         orders=f_orders,
-        xrate=F(b_buy_token_price) / F(FEE_TOKEN_PRICE),
+        xrate=F(b_buy_token_price) / F(Config.FEE_TOKEN_PRICE),
         buy_token_price=b_buy_token_price,
         fee=fee,
         arith_traits=arith_traits
@@ -100,7 +100,7 @@ def compute_objective(
 
     # The imbalance multiplied by the price of b_buy_token is the total fee volume
     # which is then divided by the fee_token_price to get the amount of fee tokens.
-    fees_payed = b_buy_token_imbalance * F(b_buy_token_price) / F(FEE_TOKEN_PRICE)
+    fees_payed = b_buy_token_imbalance * F(b_buy_token_price) / F(Config.FEE_TOKEN_PRICE)
 
     return t1 + t2 + t3 + fees_payed / 2
 
@@ -127,7 +127,7 @@ def aggregate_orders_prices(
 
     # Aggregate prices.
     prices = {
-        fee.token: FEE_TOKEN_PRICE,
+        fee.token: Config.FEE_TOKEN_PRICE,
         b_buy_token: b_buy_token_price,
         s_buy_token: b_buy_token_price / xrate
     }

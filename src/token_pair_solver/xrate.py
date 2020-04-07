@@ -191,18 +191,16 @@ class SymbolicSolver:
     # b_exec_order[0] partially filled,
     # s_exec_order[0] fully filled
     # examples: data/token_pair-1-1-1.json, data/token_pair-2-1-1.json
-    # TODO: It seems this root can only be the optimum when len(s_exec_order)==1. Why?
     def root4(self, b_exec_orders, s_exec_orders):
-        if len(s_exec_orders) > 1:
-            return None
         b_pi = pi(b_exec_orders[0])
-        s_pi = pi(s_exec_orders[0])
-        s_yb = yb(s_exec_orders[0])
+
         b_yb_sum = sum(yb(b_order) for b_order in b_exec_orders)
+        s_yb_sum = sum(yb(s_order) for s_order in s_exec_orders)
 
         f = 1 - self.fee.value
 
-        t = b_pi * (f * s_pi * b_yb_sum + s_yb) / (2 * s_pi * s_yb * f)
+        a = sum(yb(s_order) / pi(s_order) for s_order in s_exec_orders)
+        t = b_pi * (f * b_yb_sum + a) / (2 * f * s_yb_sum)
         r = sqrt(t) if t >= 0 else None
 
         # This is the only irrational root. Approximating:

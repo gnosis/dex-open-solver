@@ -60,3 +60,8 @@ class LoggerFormatter(logging.Formatter):
             record.args = transform(record.args, self.prettify_fractions)
         text = f'{record.levelname:7s}::{record.module:<11s}: {record.getMessage()}'
         return text
+
+
+class classproperty(property):
+    def __get__(self, cls, owner):
+        return classmethod(self.fget).__get__(None, owner)()

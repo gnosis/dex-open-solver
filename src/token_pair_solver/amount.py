@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # To account for the possibility that the minimum tradable amount
 # constraint will end up being violated when rounding the solution to
 # integers, the effective lower bound is conservatively increased here.
-MIN_TRADABLE_AMOUNT = int(Config.MIN_TRADABLE_AMOUNT * 1.001)
+MIN_TRADABLE_AMOUNT = Config.MIN_RATIONAL_TRADABLE_AMOUNT
 
 
 #############################################################################

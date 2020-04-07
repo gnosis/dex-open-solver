@@ -12,6 +12,9 @@ def create_market_order(
 ):
     # Market order: sell everything at the lowest price.
 
+    # adjust sell amount to satisfy minimum tradable amount
+    sell_amount = max(sell_amount, Config.MIN_RATIONAL_TRADABLE_AMOUNT)
+
     # Compute the most optimistic xrate selling buy_token for sell_token.
     min_xrate = min(order.max_xrate for order in s_orders)
 

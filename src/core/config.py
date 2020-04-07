@@ -1,7 +1,10 @@
+from src.core.util import classproperty
 
 
 class Config:
     """Configuration parameters for the solver."""
+
+    # Main problem parameters:
 
     """Minimum amount bought or sold in an order."""
     MIN_TRADABLE_AMOUNT = 10000
@@ -11,6 +14,14 @@ class Config:
 
     """Maximum number of executed orders."""
     MAX_NR_EXEC_ORDERS = 30
+
+    # Rounding parameters:
+
+    # Rational solver will enforce that tradable amounts are
+    # >= MIN_TRADABLE_AMOUNT * (1 + MIN_TRADABLE_AMOUNT_ROUNDING_TOL).
+    # This extra slack is to make sure the constraint won't be violated
+    # after rounding the solution to integers.
+    MIN_TRADABLE_AMOUNT_ROUNDING_TOL = 0.001
 
     # Set maximum amount that might need to be rounded in terms of fee token:
     # The assumption is that the solver will not incur float/int imprecisions
@@ -23,3 +34,10 @@ class Config:
     # Larger error estimations lead to larger rounding buffers.
     # TODO: Monitor constant and eventually improve.
     PRICE_ESTIMATION_ERROR = 10
+
+    # Convenience method to compute effective min tradable amount.
+    @classproperty
+    def MIN_RATIONAL_TRADABLE_AMOUNT(cls):
+        return int(
+            cls.MIN_TRADABLE_AMOUNT * (1 + cls.MIN_TRADABLE_AMOUNT_ROUNDING_TOL)
+        )

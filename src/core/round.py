@@ -123,6 +123,60 @@ def compute_spanning_order_arborescence(orders, fee):
     return {e[1]: e[0] for e in arborescence.edges}
 
 
+def round_leaf_token(leaf_token, parent_token, orders, token_balances, prices, fee):
+    # Find and adjust order selling tL, buying tP.
+    # Sort in decreasing executed buy amount so that the full rounding
+    # procedure touches the less number of orders.
+    for order in sorted(orders, key=lambda order: order.buy_amount, reverse=True):
+
+        if order.buy_token != leaf_token or order.sell_token != parent_token \
+           or order.buy_amount == 0:
+            continue
+
+        # Min amount that can be added to order.buy_amount without violating
+        # the minimum tradable amount constraint.
+        min_buy_amount_delta = Config.MIN_TRADABLE_AMOUNT - order.buy_amount
+
+        # Amount to be added to order.buy_amount.
+        buy_amount_delta = max(
+            min_buy_amount_delta,
+            token_balances[leaf_token]
+        )
+
+        new_sell_amount = order.with_buy_amount(order.buy_amount + buy_amount_delta)\
+            .get_sell_amount_from_buy_amount(prices, fee, IntegerTraits)
+
+        # Skip order if rounding would lead to violation of max sell amount.
+        if new_sell_amount > order.max_sell_amount:
+            continue
+
+        # Skip order if rounding would lead to violation of min tradable amount.
+        if new_sell_amount < Config.MIN_TRADABLE_AMOUNT:
+            continue
+
+        # Can't violate min tradable amount for the buy amount.
+        assert order.buy_amount + buy_amount_delta >= Config.MIN_TRADABLE_AMOUNT
+
+        # Round order and update balance:
+        token_balances[leaf_token] -= buy_amount_delta
+        old_buy_amount, old_sell_amount = order.buy_amount, order.sell_amount
+        order.buy_amount += buy_amount_delta
+        order.set_sell_amount_from_buy_amount(prices, fee, IntegerTraits)
+
+        logging.debug("Adjusting order %s:", order.index)
+        logging.debug(
+            "\t(old) buy_amount : %25d  -- sell_amount: %25d",
+            old_buy_amount, old_sell_amount
+        )
+        logging.debug(
+            "\t(new) buy_amount : %25d  -- sell_amount: %25d",
+            order.buy_amount, order.sell_amount
+        )
+
+        if token_balances[leaf_token] == 0:
+            break
+
+
 def round_solution(prices, orders, fee):
 
     # Iterate over orders and round amounts.
@@ -153,49 +207,10 @@ def round_solution(prices, orders, fee):
         ][0]
         parent_token = tree[leaf_token]
 
-        # Find and adjust order selling tL, buying tP.
-        # Sort in decreasing execBuyAmount so that the full rounding
-        # procedure touches the less number of orders.
-        for order in sorted(orders, key=lambda order: -order.buy_amount):
-
-            if order.buy_token != leaf_token or order.sell_token != parent_token \
-               or order.buy_amount == 0:
-                continue
-
-            # Amount to be subtracted from order.buy_amount
-            buy_amount_delta = min(
-                order.buy_amount - Config.MIN_TRADABLE_AMOUNT,
-                -token_balances[leaf_token]
+        if token_balances[leaf_token] != 0:
+            round_leaf_token(
+                leaf_token, parent_token, orders, token_balances, prices, fee
             )
-
-            # Skip order if rounding would lead to violation of minimum tradable amount.
-            if order.buy_amount - buy_amount_delta < Config.MIN_TRADABLE_AMOUNT:
-                continue
-
-            # Skip order if rounding would lead to violation of max sell amount.
-            if order.with_buy_amount(order.buy_amount - buy_amount_delta)\
-               .get_sell_amount_from_buy_amount(prices, fee, IntegerTraits)\
-               > order.max_sell_amount:
-                continue
-
-            # Otherwise round order.
-            token_balances[leaf_token] += buy_amount_delta
-            old_buy_amount, old_sell_amount = order.buy_amount, order.sell_amount
-            order.buy_amount -= buy_amount_delta
-            order.set_sell_amount_from_buy_amount(prices, fee, IntegerTraits)
-
-            logging.debug("Adjusting order %s:", order.index)
-            logging.debug(
-                "\t(old) buy_amount : %25d  -- sell_amount: %25d",
-                old_buy_amount, old_sell_amount
-            )
-            logging.debug(
-                "\t(new) buy_amount : %25d  -- sell_amount: %25d",
-                order.buy_amount, order.sell_amount
-            )
-
-            if token_balances[leaf_token] == 0:
-                break
 
         # Compute and check updated token balances.
         token_balances = compute_token_balances(prices.keys(), orders)

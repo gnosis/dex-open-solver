@@ -21,6 +21,8 @@ from .xrate import find_best_xrate
 
 logger = logging.getLogger(__name__)
 
+TRIVIAL_SOLUTION = ([], {})
+
 
 def solve_token_pair(
     token_pair,
@@ -186,6 +188,14 @@ def solve_token_pair_and_fee_token_given_exec_f_orders(
         fee=fee
     )
 
+    # It can happen (due to side constraints) that the number of executed
+    # orders selling fee is less than what was requested.
+    nr_exec_f_orders = count_nr_exec_orders(f_orders[:nr_exec_f_orders])
+
+    # If there are no f_orders, there can't be no match and no price.
+    if nr_exec_f_orders == 0:
+        return (0, xrate, None)
+
     # Re-execute orders between token pair with the fixed b_buy_token_price,
     # and adjusted max_nr_exec_orders.
     # This fixes the final xrate, and therefore the final s_buy_token_price.
@@ -227,10 +237,8 @@ def solve_token_pair_and_fee_token(
     Sets b_orders/s_orders/f_orders integral buy_amounts for the best execution.
     Also returns the prices found.
     """
-    trivial_solution = [], dict()
-
     if len(b_orders) == 0 or len(s_orders) == 0:
-        return trivial_solution
+        return TRIVIAL_SOLUTION
 
     # This function does not support s_buy_token = fee token.
     if token_pair[1] == fee.token:
@@ -254,7 +262,7 @@ def solve_token_pair_and_fee_token(
 
     if count_nr_exec_orders(b_orders) == 0:
         logger.info("No matching orders between %s and %s.", b_buy_token, s_buy_token)
-        return trivial_solution
+        return TRIVIAL_SOLUTION
 
     if b_buy_token == fee.token:
         # If b_buy_token is fee, then there is only two sets of orders,
@@ -265,7 +273,7 @@ def solve_token_pair_and_fee_token(
         # Otherwise orders buying b_buy_token for fee must be considered, so that
         # the b_buy_token imbalance due to fee and rounding can be bought.
         if len(f_orders) == 0:
-            return trivial_solution
+            return TRIVIAL_SOLUTION
 
         logger.debug("")
         logger.debug("=== Computing price of %s ===", b_buy_token)
@@ -307,6 +315,10 @@ def solve_token_pair_and_fee_token(
                     token_pair, b_orders, s_orders, f_orders, xrate, fee
                 )
 
+            # Skip iteration if it was not possible to connect to fee token.
+            if b_buy_token_price is None:
+                continue
+
             logger.debug("Objective\t:\t%s\t[best=%s]", objective, best_objective)
 
             # Update best solution found so far if necessary.
@@ -318,6 +330,13 @@ def solve_token_pair_and_fee_token(
 
         xrate, b_buy_token_price, b_orders, s_orders, f_orders = best_solution
 
+        # Return trivial solution in case it was not possible to connect to the fee token.
+        # This can happen due to side constraints, for example if the resulting f_orders
+        # violate the minimum tradable amount.
+        if b_buy_token_price is None:
+            logger.debug("Could not execute f_orders.")
+            return TRIVIAL_SOLUTION
+            
         logger.debug("Price of %s\t:\t%s", b_buy_token, b_buy_token_price)
         logger.debug("Price of %s\t:\t%s", s_buy_token, b_buy_token_price / xrate)
         logger.debug(
@@ -347,7 +366,7 @@ def solve_token_pair_and_fee_token(
     logger.debug("=== Rounding ===")
     if not round_solution(prices, orders, fee):
         logger.warning("Could not round solution.")
-        return trivial_solution
+        return TRIVIAL_SOLUTION
 
     # Make sure the solution is correct.
     validate(accounts, orders, prices, fee)

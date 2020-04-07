@@ -155,6 +155,9 @@ def compute_nr_f_orders_to_execute(b_orders, s_orders, f_orders):
     # the number of f_orders to execute unless it is really necessary.
     min_nr_exec_f_orders = min(min_max_nr_exec_f_orders, max_nr_exec_f_orders)
 
+    # At least one f_order needs to be executed.
+    min_nr_exec_f_orders = max(min_nr_exec_f_orders, 1)
+
     return (min_nr_exec_f_orders, max_nr_exec_f_orders)
 
 
@@ -281,6 +284,10 @@ def solve_token_pair_and_fee_token(
         # of executed orders constraint is satisfied.
         min_nr_exec_f_orders, max_nr_exec_f_orders = \
             compute_nr_f_orders_to_execute(b_orders, s_orders, f_orders)
+
+        # If the interval of number of f_orders to try is empty, then there's no solution.
+        if min_nr_exec_f_orders > max_nr_exec_f_orders:
+            return TRIVIAL_SOLUTION
 
         logger.debug("")
         logger.debug(

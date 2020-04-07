@@ -252,7 +252,7 @@ def solve_token_pair_and_fee_token(
     )
     xrate = solve_token_pair(token_pair, b_orders, s_orders, fee, xrate=xrate)
 
-    if xrate is None:
+    if count_nr_exec_orders(b_orders) == 0:
         logger.info("No matching orders between %s and %s.", b_buy_token, s_buy_token)
         return trivial_solution
 

@@ -6,7 +6,7 @@ from fractions import Fraction as F
 
 from src.core.api import dump_solution
 from src.core.config import Config
-from src.core.orderbook import count_nr_exec_orders
+from src.core.orderbook import count_nr_exec_orders, is_economic_viable
 from src.core.round import round_solution
 from src.core.validation import validate
 
@@ -232,11 +232,17 @@ def solve_token_pair_and_fee_token(
     token_pair, accounts, b_orders, s_orders, f_orders, fee,
     xrate=None
 ):
-    """Match orders between token pair and the fee token.
+    """Match orders between token pair and the fee token, taking into account
+    all side constraints except economic viability. This means the solution obtained
+    from this function can be economic inviable (see also config.MIN_AVERAGE_ORDER_FEE,
+    for what exactly that means).
 
-    Sets b_orders/s_orders/f_orders integral buy_amounts for the best execution.
-    Also returns the prices found.
+    If xrate is given, then it will be used instead of trying to find
+    optimal xrate.
+
+    Sets b_orders/s_orders/f_orders (integral) buy_amounts for the best execution.
     """
+
     if len(b_orders) == 0 or len(s_orders) == 0:
         return TRIVIAL_SOLUTION
 
@@ -336,7 +342,7 @@ def solve_token_pair_and_fee_token(
         if b_buy_token_price is None:
             logger.debug("Could not execute f_orders.")
             return TRIVIAL_SOLUTION
-            
+
         logger.debug("Price of %s\t:\t%s", b_buy_token, b_buy_token_price)
         logger.debug("Price of %s\t:\t%s", s_buy_token, b_buy_token_price / xrate)
         logger.debug(
@@ -361,12 +367,62 @@ def solve_token_pair_and_fee_token(
         token_pair, b_orders, s_orders, f_orders, xrate, b_buy_token_price, fee
     )
 
+    # Remove unfilled orders.
+    orders = [o for o in orders if o.buy_amount > 0]
+
     # Integrate sell_amounts and prices in solution, and round.
     logger.debug("")
     logger.debug("=== Rounding ===")
     if not round_solution(prices, orders, fee):
         logger.warning("Could not round solution.")
         return TRIVIAL_SOLUTION
+
+    return orders, prices
+
+
+def solve_token_pair_and_fee_token_economic_viable(
+    token_pair, accounts, b_orders, s_orders, f_orders, fee,
+    xrate=None
+):
+    """Match orders between token pair and the fee token, taking into
+    account all side constraints, including economic viability.
+
+    If xrate is given, then it will be used instead of trying to find
+    optimal xrate.
+
+    Sets b_orders/s_orders/f_orders (integral) buy_amounts for the best execution.
+    Also returns the (integral) prices found.
+    """
+    b_buy_token, s_buy_token = token_pair
+
+    orders, prices = TRIVIAL_SOLUTION
+
+    # Search for an economically viable solution.
+    while len(b_orders) > 0 or len(s_orders) > 0:
+
+        # Solve current problem.
+        orders, prices = solve_token_pair_and_fee_token(
+            token_pair, accounts, b_orders, s_orders, f_orders, fee, xrate
+        )
+
+        # If solution is economically viable, exit.
+        # Hopefully, in large majority of cases this will occur in the first iteration.
+        if is_economic_viable(orders, prices, fee, IntegerTraits):
+            break
+
+        # Find and remove the order paying the least fee.
+        b_order_with_min_buy_amount = min(b_orders, key=lambda o: o.buy_amount)
+        s_order_with_min_buy_amount = min(s_orders, key=lambda o: o.buy_amount)
+
+        if b_order_with_min_buy_amount.buy_amount * prices[b_buy_token]\
+           < s_order_with_min_buy_amount.buy_amount * prices[s_buy_token]:
+            b_orders = [
+                o for o in b_orders if o.index != b_order_with_min_buy_amount.index
+            ]
+        else:
+            s_orders = [
+                o for o in s_orders if o.index != s_order_with_min_buy_amount.index
+            ]
 
     # Make sure the solution is correct.
     validate(accounts, orders, prices, fee)
@@ -387,7 +443,7 @@ def main(args):
     )
 
     # Find token pair + fee token matching.
-    orders, prices = solve_token_pair_and_fee_token(
+    orders, prices = solve_token_pair_and_fee_token_economic_viable(
         args.token_pair, accounts, b_orders, s_orders, f_orders, fee, xrate=args.xrate
     )
 

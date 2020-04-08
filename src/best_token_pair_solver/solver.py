@@ -6,7 +6,7 @@ from functools import reduce
 
 from src.core.api import IntegerTraits, dump_solution, load_problem
 from src.core.orderbook import compute_objective_value, update_accounts
-from src.token_pair_solver.solver import solve_token_pair_and_fee_token
+from src.token_pair_solver.solver import solve_token_pair_and_fee_token_economic_viable
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ def match_token_pair(token_pair, accounts, orders, fee):
         f_orders = []
 
     # Find token pair + fee token matching.
-    orders, prices = solve_token_pair_and_fee_token(
+    orders, prices = solve_token_pair_and_fee_token_economic_viable(
         token_pair, accounts, b_orders, s_orders, f_orders, fee
     )
     return (orders, prices)

@@ -15,6 +15,9 @@ class Config:
     """Maximum number of executed orders."""
     MAX_NR_EXEC_ORDERS = 30
 
+    """Minimum average fee payed per order on an admissible solution."""
+    MIN_AVERAGE_ORDER_FEE = 0
+
     # Rounding parameters:
 
     # Rational solver will enforce that tradable amounts are

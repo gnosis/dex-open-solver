@@ -1,6 +1,7 @@
 from fractions import Fraction as F
 from typing import Dict, List, Tuple
 
+from .config import Config
 from .order import Order
 from .order_util import IntegerTraits
 
@@ -245,3 +246,36 @@ def compute_connected_tokens(orders, fee_token):
 
     # Return the set of visited tokens.
     return set(connected_tokens)
+
+
+def compute_total_fee(orders, prices, fee, arith_traits):
+    """Compute total fee in the solution."""
+    sold_fee = sum(
+        order.get_sell_amount_from_buy_amount(prices, fee, arith_traits)
+        for order in orders if order.sell_token == fee.token
+    )
+    bought_fee = sum(
+        order.buy_amount
+        for order in orders if order.buy_token == fee.token
+    )
+    return sold_fee - bought_fee
+
+
+def compute_average_order_fee(orders, prices, fee, arith_traits):
+    return compute_total_fee(orders, prices, fee, arith_traits) \
+        / count_nr_exec_orders(orders)
+
+
+def is_economic_viable(orders, prices, fee, arith_traits):
+    # Trivial solution is economically viable.
+    if count_nr_exec_orders(orders) == 0:
+        return True
+
+    # Shortcut to avoid computing fees.
+    if Config.MIN_AVERAGE_ORDER_FEE == 0:
+        return True
+
+    average_order_fee = compute_average_order_fee(orders, prices, fee, arith_traits)
+
+    # Compute average fees.
+    return average_order_fee >= Config.MIN_AVERAGE_ORDER_FEE

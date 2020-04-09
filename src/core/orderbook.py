@@ -279,3 +279,7 @@ def is_economic_viable(orders, prices, fee, arith_traits):
 
     # Compute average fees.
     return average_order_fee >= Config.MIN_AVERAGE_ORDER_FEE
+
+
+def is_trivial(orders):
+    return count_nr_exec_orders(orders) == 0

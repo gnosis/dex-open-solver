@@ -6,7 +6,7 @@ from fractions import Fraction as F
 
 from src.core.api import dump_solution
 from src.core.config import Config
-from src.core.orderbook import count_nr_exec_orders, is_economic_viable
+from src.core.orderbook import count_nr_exec_orders, is_economic_viable, is_trivial
 from src.core.round import round_solution
 from src.core.validation import validate
 
@@ -367,9 +367,6 @@ def solve_token_pair_and_fee_token(
         token_pair, b_orders, s_orders, f_orders, xrate, b_buy_token_price, fee
     )
 
-    # Remove unfilled orders.
-    orders = [o for o in orders if o.buy_amount > 0]
-
     # Integrate sell_amounts and prices in solution, and round.
     logger.debug("")
     logger.debug("=== Rounding ===")
@@ -407,7 +404,7 @@ def solve_token_pair_and_fee_token_economic_viable(
 
         # If solution is economically viable, exit.
         # Hopefully, in large majority of cases this will occur in the first iteration.
-        if is_economic_viable(orders, prices, fee, IntegerTraits):
+        if is_economic_viable(orders, prices, fee, IntegerTraits) or is_trivial(orders):
             break
 
         # Find and remove the order paying the least fee.

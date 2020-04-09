@@ -1,20 +1,16 @@
 """Assert that an instance has a nontrivial solution."""
 from src.token_pair_solver.solver import main
 from argparse import Namespace
-import tempfile
 import json
 
 
 def test_has_non_trivial_solution(local_instance):
     """Asserts that passed local_instance has a nontrivial solution."""
-    solution = tempfile.NamedTemporaryFile(
-        mode='w+', delete=False, prefix='solution-', suffix='.json'
-    )
     with open(local_instance, 'r') as fd:
         args = Namespace(
             instance=fd,
             token_pair=('token0', 'token1'),
-            solution=solution,
+            solution_filename=None,
             xrate=None
         )
         solution = main(args)

@@ -23,10 +23,8 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--solution',
-        type=argparse.FileType('w+'),
-        default=tempfile.NamedTemporaryFile(
-            mode='w+', delete=False, prefix='solution-', suffix='.json'
-        ),
+        type=str,
+        default=None,
         help="File where the solution should be output to. "
              "(by default creates a file in a temp directory)"
     )
@@ -56,6 +54,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     log_level = getattr(logging, args.logging)
+
+    args.solution_filename = args.solution
 
     handler = logging.StreamHandler()
     formatter = LoggerFormatter(style='{', rationals=args.log_rationals)

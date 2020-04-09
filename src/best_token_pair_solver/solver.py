@@ -105,14 +105,12 @@ def main(args):
 
     # Dump solution to file.
     dump_solution(
-        instance, args.solution,
+        instance, args.solution_filename,
         orders,
         prices,
         fee=fee,
         arith_traits=IntegerTraits
     )
-
-    logger.info("Solution file is '%s'.", args.solution.name)
 
 
 def setup_arg_parser(subparsers):

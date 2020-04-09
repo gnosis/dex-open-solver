@@ -1,5 +1,6 @@
 import json
 import logging
+import tempfile
 from collections import namedtuple
 from copy import deepcopy
 from fractions import Fraction as F
@@ -38,7 +39,7 @@ def load_problem(instance):
 
 def dump_solution(
     instance,
-    solution_file,
+    solution_filename,
     orders,
     prices,
     fee,
@@ -77,4 +78,14 @@ def dump_solution(
     for order in instance['orders']:
         if 'orderID' in order.keys():
             order['orderID'] = int(order['orderID'])
+    if solution_filename is None:
+        solution_file = tempfile.NamedTemporaryFile(
+            mode='w+', delete=False, prefix='solution-', suffix='.json'
+        )
+        solution_filename = solution_file.name
+    else:
+        solution_file = open(solution_filename, "w+")
     json.dump(instance, solution_file, indent=4)
+    solution_file.close()
+
+    logger.info("Solution file is '%s'.", solution_filename)

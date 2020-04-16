@@ -3,10 +3,12 @@ import logging
 from copy import deepcopy
 from decimal import Decimal as D
 from fractions import Fraction as F
+from math import ceil, floor
 
 from src.core.api import dump_solution
 from src.core.config import Config
-from src.core.orderbook import count_nr_exec_orders, is_economic_viable, is_trivial
+from src.core.orderbook import (count_nr_exec_orders, is_economic_viable,
+                                is_trivial)
 from src.core.round import round_solution
 from src.core.validation import validate
 
@@ -14,7 +16,8 @@ from .amount import compute_buy_amounts
 from .api import load_problem
 from .orderbook import (IntegerTraits, RationalTraits, aggregate_orders_prices,
                         compute_b_buy_token_imbalance,
-                        compute_objective_rational)
+                        compute_objective_rational,
+                        count_orders_satisfying_xrate)
 from .price import compute_token_price_to_cover_imbalance, create_market_order
 from .round import rounding_buffer
 from .xrate import find_best_xrate
@@ -22,6 +25,21 @@ from .xrate import find_best_xrate
 logger = logging.getLogger(__name__)
 
 TRIVIAL_SOLUTION = ([], {})
+
+
+def compute_s_buy_token_price(b_buy_token_price, xrate, b_orders, s_orders, fee):
+    s_buy_token_price_up = ceil(b_buy_token_price / xrate)
+    s_buy_token_price_down = floor(b_buy_token_price / xrate)
+    xrate_up = F(b_buy_token_price, s_buy_token_price_up)
+    xrate_down = F(b_buy_token_price, s_buy_token_price_down)
+    cu = count_orders_satisfying_xrate(b_orders, xrate_up, fee) + \
+        count_orders_satisfying_xrate(s_orders, 1 / xrate_up, fee)
+    cd = count_orders_satisfying_xrate(b_orders, xrate_down, fee) + \
+        count_orders_satisfying_xrate(s_orders, 1 / xrate_down, fee)
+    if cu > cd:
+        return s_buy_token_price_up
+    else:
+        return s_buy_token_price_down
 
 
 def solve_token_pair(
@@ -69,7 +87,9 @@ def solve_token_pair(
     # xrate = b_buy_token_price / s_buy_token_price
     # and s_buy_token_price is an integer.
     if b_buy_token_price is not None:
-        s_buy_token_price = round(b_buy_token_price / xrate)
+        s_buy_token_price = compute_s_buy_token_price(
+            b_buy_token_price, xrate, b_orders, s_orders, fee
+        )
         xrate = F(b_buy_token_price, s_buy_token_price)
         logger.debug("Adjusted xrate\t:\t%s", xrate)
 

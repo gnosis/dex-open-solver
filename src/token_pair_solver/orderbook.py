@@ -133,3 +133,7 @@ def aggregate_orders_prices(
     }
 
     return orders, prices
+
+
+def count_orders_satisfying_xrate(b_orders, xrate, fee):
+    return sum(xrate <= b_order.max_xrate * (1 - fee.value) for b_order in b_orders)

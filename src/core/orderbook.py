@@ -1,9 +1,12 @@
+import logging
 from fractions import Fraction as F
 from typing import Dict, List, Tuple
 
 from .config import Config
 from .order import Order
 from .order_util import IntegerTraits
+
+logger = logging.getLogger(__name__)
 
 
 def compute_solution_metrics(prices, accounts_updated, orders, fee):
@@ -43,24 +46,23 @@ def compute_solution_metrics(prices, accounts_updated, orders, fee):
             balance_updated = accounts_updated[order.account_id].get(order.sell_token, 0)
         else:
             balance_updated = 0
-        max_sell_amount_ = min(order.max_sell_amount, order.sell_amount + balance_updated)
         umax = IntegerTraits.compute_max_utility_term(
-            order=order.with_max_sell_amount(max_sell_amount_),
+            order=order,
+            balance_updated=balance_updated,
             xrate=xrate,
             buy_token_price=buy_token_price,
             fee=fee
         )
 
-        # TODO: can this happen here?
-        # if u > umax:
-        #    logger.warning(
-        #        "Computed utility of <%s> larger than maximum utility!\n"
-        #        "u    = %d\n"
-        #        "umax = %d"
-        #        % (oID, u, umax))
+        if u > umax:
+            logger.warning(
+                "Computed utility of <%s> larger than maximum utility:", order.index
+            )
+            logger.warning("u    = %d", u)
+            logger.warning("umax = %d", umax)
 
         obj['utility'] += u
-        obj['utility_disreg'] += max([(umax - u), 0])
+        obj['utility_disreg'] += max(umax - u, 0)
 
         if order.sell_amount > 0:
             obj['orders_touched'] += 1

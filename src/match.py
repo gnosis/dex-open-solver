@@ -1,12 +1,13 @@
 import argparse
 import logging
-import tempfile
+from fractions import Fraction as F
 
+from .best_token_pair_solver.solver import \
+    setup_arg_parser as setup_best_token_pair_parser
 from .core.util import LoggerFormatter
 from .token_pair_solver.solver import \
     setup_arg_parser as setup_token_pair_solver_parser
-from .best_token_pair_solver.solver import \
-    setup_arg_parser as setup_best_token_pair_parser
+from .core.config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,12 @@ if __name__ == '__main__':
         type=bool,
         help="If true then all numeric quantities will be logged in rational form."
     )
+    parser.add_argument(
+        '--min-avg-fee-per-order',
+        default=F(0),
+        type=F,
+        help="Minimum average fee payed per order on an admissible solution."
+    )
 
     subparsers = parser.add_subparsers(
         title='subcommand',
@@ -56,6 +63,8 @@ if __name__ == '__main__':
     log_level = getattr(logging, args.logging)
 
     args.solution_filename = args.solution
+
+    Config.MIN_AVERAGE_ORDER_FEE = args.min_avg_fee_per_order
 
     handler = logging.StreamHandler()
     formatter = LoggerFormatter(style='{', rationals=args.log_rationals)

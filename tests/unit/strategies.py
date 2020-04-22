@@ -25,10 +25,8 @@ def random_xrate(
         return s.fractions(min_value=max_xrate_ub, max_value=1 / max_xrate_ub)
 
 
-RANDOM_ORDER_DEFAULT_MAX_AMOUNT_LB = 9000
-RANDOM_ORDER_DEFAULT_MAX_AMOUNT_UB = 20000
-
-order_counter = 0
+RANDOM_ORDER_DEFAULT_MAX_AMOUNT_LB = int(0.0001 * 1e18)
+RANDOM_ORDER_DEFAULT_MAX_AMOUNT_UB = int(100000 * 1e18)
 
 
 @composite
@@ -64,8 +62,6 @@ def random_order(
         max_xrate = draw(random_xrate(max_xrate_ub))
 
     return Order(
-        index=order_counter,
-        account_id=None,  # To be filled later.
         buy_token=buy_token,
         sell_token=sell_token,
         max_sell_amount=max_sell_amount,
@@ -87,3 +83,19 @@ def random_order_list(
     """
     orders = random_order(**kwargs)
     return s.lists(orders, min_size=min_size, max_size=max_size)
+
+
+# Generate orders using small amounts, useful because:
+# * More convenient to debug.
+# * Has higher chance of violating min tradable amount or
+#   economic viability constraints.
+MAX_AMOUNT_LB_SMALL = 9000
+MAX_AMOUNT_UB_SMALL = 200000
+
+
+def random_small_order_list(*args, **kwargs):
+    return random_order_list(
+        *args, **kwargs,
+        max_sell_amount_lb=MAX_AMOUNT_LB_SMALL,
+        max_sell_amount_ub=MAX_AMOUNT_UB_SMALL
+    )

@@ -26,7 +26,7 @@ def load_problem(instance):
     accounts = deepcopy(instance['accounts'])
 
     orders = [
-        Order.load_from_dict(index, order_dict)
+        Order.load_from_dict(order_dict, str(index))
         for index, order_dict in enumerate(instance['orders'])
     ]
 
@@ -56,11 +56,11 @@ def dump_solution(
     instance['objVals'] = compute_solution_metrics(prices, accounts, orders, fee)
 
     # Dump touched orders.
-    orders = sorted(orders, key=lambda order: order.index)
-    orders_indexes = {order.index for order in orders}
+    orders = sorted(orders, key=lambda order: order.id)
+    orders_ids = {order.id for order in orders}
     original_orders = [
         order for index, order in enumerate(instance['orders'])
-        if index in orders_indexes
+        if str(index) in orders_ids
     ]
     touched_orders = []
     for order, original_order in zip(orders, original_orders):

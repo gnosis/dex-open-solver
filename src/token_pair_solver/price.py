@@ -22,8 +22,6 @@ def create_market_order(
     min_xrate *= F(9, 10)
 
     market_order = Order(
-        index=None,
-        account_id=None,
         buy_token=buy_token,
         sell_token=sell_token,
         max_sell_amount=sell_amount,

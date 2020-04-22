@@ -1,5 +1,5 @@
 pytest==5.3.2 # Testing
 flake8==3.7.9 # Linting
-hypothesis==4.53.2 # Testing
+hypothesis==5.6.0 # Testing
 networkx==2.4 # Graph algorithms used for rounding
 attrs >=19.3.0 # This attrs version is needed for travis testing

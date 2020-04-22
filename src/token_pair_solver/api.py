@@ -14,7 +14,7 @@ def load_problem(instance, token_pair):
     accounts = deepcopy(instance['accounts'])
 
     orders = [
-        Order.load_from_dict(index, order_dict)
+        Order.load_from_dict(order_dict, str(index))
         for index, order_dict in enumerate(instance['orders'])
     ]
 

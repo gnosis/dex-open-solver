@@ -276,7 +276,7 @@ def undo_order_execution_violating_min_tradable_amount_constraint(
     if b_buy_amount < MIN_TRADABLE_AMOUNT or b_sell_amount < MIN_TRADABLE_AMOUNT:
         logger.debug(
             "b_order %s violates minimum tradable amount constraint. Skipped.",
-            b_orders[b_i].index
+            b_orders[b_i].id
         )
         b_i, s_i = undo_b_order_execution(b_i, s_i, b_orders, s_orders, xrate, fee)
         undone_order_execution = True
@@ -292,7 +292,7 @@ def undo_order_execution_violating_min_tradable_amount_constraint(
         # Undo current s_order.
         logger.debug(
             "s_order %s violates minimum tradable amount constraint. Skipped.",
-            s_orders[s_i].index
+            s_orders[s_i].id
         )
         b_i, s_i = undo_s_order_execution(b_i, s_i, b_orders, s_orders, xrate, fee)
         undone_order_execution = True

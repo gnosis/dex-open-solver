@@ -84,7 +84,7 @@ def setup_rounding_buffer(
 
         logging.info(
             "Reducing max sell amount [%s] of order <%s> : %25d --> %25d",
-            tS, o.index, old_max_sell_amount, new_max_sell_amount
+            tS, o.id, old_max_sell_amount, new_max_sell_amount
         )
 
         assert new_max_sell_amount < old_max_sell_amount or old_max_sell_amount == 0
@@ -163,7 +163,7 @@ def round_leaf_token(leaf_token, parent_token, orders, token_balances, prices, f
         order.buy_amount += buy_amount_delta
         order.set_sell_amount_from_buy_amount(prices, fee, IntegerTraits)
 
-        logging.debug("Adjusting order %s:", order.index)
+        logging.debug("Adjusting order %s:", order.id)
         logging.debug(
             "\t(old) buy_amount : %25d  -- sell_amount: %25d",
             old_buy_amount, old_sell_amount

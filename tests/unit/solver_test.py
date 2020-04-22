@@ -1,46 +1,25 @@
 from fractions import Fraction as F
 
-from hypothesis import event, example, given
+from hypothesis import event, given
 from hypothesis import strategies as s
 
 from src.core.api import Fee
 from src.core.config import Config
-from src.core.order import Order
 from src.core.orderbook import count_nr_exec_orders
-from src.token_pair_solver.solver import solve_token_pair_and_fee_token_economic_viable
-from tests.unit.strategies import random_order_list
-
-
-fee = Fee(token='F', value=F(1, 1000))
-
-example_1 = {
-    'b_orders': [
-        Order(0, None, 'T0', 'T1', 11109, F(1))
-    ],
-    's_orders': [
-        Order(2, None, 'T1', 'T0', 11132, F(17, 10))
-    ],
-    'f_orders': [
-        Order(4, None, 'T0', 'F', 9000, F(228, 25))
-    ],
-    'max_nr_exec_orders': 3
-}
-
-
-@given(
-    random_order_list(min_size=1, max_size=4, buy_token='T0', sell_token='T1'),
-    random_order_list(min_size=1, max_size=4, buy_token='T1', sell_token='T0'),
-    random_order_list(min_size=1, max_size=4, buy_token='T0', sell_token='F'),
-    s.integers(min_value=2, max_value=12)
+from src.token_pair_solver.solver import (
+    solve_token_pair_and_fee_token_economic_viable
 )
-@example(**example_1)
-def test_solve_token_pair_and_fee_token_economic_viable(
-    b_orders, s_orders, f_orders, max_nr_exec_orders
+from tests.unit.solver_test_examples import (
+    min_average_order_fee_constraint_examples,
+    solve_token_pair_and_fee_token_examples)
+from tests.unit.strategies import random_order_list, random_small_order_list
+from tests.unit.util import examples
+
+
+def solve_token_pair_and_fee_token_helper(
+    b_orders, s_orders, f_orders, fee
 ):
     token_pair = ('T0', 'T1')
-
-    Config.MAX_NR_EXEC_ORDERS = max_nr_exec_orders
-    Config.MAX_ROUNDING_VOLUME = 100
 
     # create accounts that cover all sell amounts
     # (for efficiency this function does not test account balance constraints).
@@ -62,4 +41,45 @@ def test_solve_token_pair_and_fee_token_economic_viable(
         token_pair, accounts, b_orders, s_orders, f_orders, fee
     )
 
-    event(f"trivial solution = {count_nr_exec_orders(orders) == 0}")
+    if count_nr_exec_orders(orders) == 0:
+        event("found trivial solution")
+    else:
+        event("found non-trivial solution")
+
+
+# Test main function using default constants.
+@given(
+    random_order_list(min_size=1, max_size=4, buy_token='T0', sell_token='T1'),
+    random_order_list(min_size=1, max_size=4, buy_token='T1', sell_token='T0'),
+    random_order_list(min_size=1, max_size=4, buy_token='T0', sell_token='F')
+)
+@examples(solve_token_pair_and_fee_token_examples)
+def test_solve_token_pair_and_fee_token(b_orders, s_orders, f_orders):
+    fee = Fee(token='F', value=F(1, 1000))
+    Config.MIN_AVERAGE_ORDER_FEE = 0
+    solve_token_pair_and_fee_token_helper(b_orders, s_orders, f_orders, fee)
+
+
+# Test minimum average fee per order constraint.
+# Adapts global constants to generate problems where this constraint is
+# violated but all other constraints can be satisfied. This ensures that
+# code for enforcing this constraint is tested.
+@given(
+    random_small_order_list(min_size=1, max_size=4, buy_token='T0', sell_token='T1'),
+    random_small_order_list(min_size=1, max_size=4, buy_token='T1', sell_token='T0'),
+    random_small_order_list(min_size=1, max_size=4, buy_token='T0', sell_token='F'),
+    s.integers(min_value=2, max_value=12)
+)
+@examples(min_average_order_fee_constraint_examples)
+def test_min_average_order_fee_constraint(
+    b_orders, s_orders, f_orders, max_nr_exec_orders
+):
+    # Note that fee ratio here is different than usual.
+    fee = Fee(token='F', value=F(1, 100))
+
+    Config.MAX_NR_EXEC_ORDERS = max_nr_exec_orders
+    Config.MIN_AVERAGE_ORDER_FEE = 10000
+    Config.MAX_ROUNDING_VOLUME = 100
+    Config.MIN_TRADABLE_AMOUNT = 1000
+
+    solve_token_pair_and_fee_token_helper(b_orders, s_orders, f_orders, fee)

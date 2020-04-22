@@ -362,7 +362,7 @@ def solve_token_pair_and_fee_token(
         if b_buy_token_price is None:
             logger.debug("Could not execute f_orders.")
             return TRIVIAL_SOLUTION
-
+            
         logger.debug("Price of %s\t:\t%s", b_buy_token, b_buy_token_price)
         logger.debug("Price of %s\t:\t%s", s_buy_token, b_buy_token_price / xrate)
         logger.debug(
@@ -434,11 +434,11 @@ def solve_token_pair_and_fee_token_economic_viable(
         if b_order_with_min_buy_amount.buy_amount * prices[b_buy_token]\
            < s_order_with_min_buy_amount.buy_amount * prices[s_buy_token]:
             b_orders = [
-                o for o in b_orders if o.index != b_order_with_min_buy_amount.index
+                o for o in b_orders if o.id != b_order_with_min_buy_amount.id
             ]
         else:
             s_orders = [
-                o for o in s_orders if o.index != s_order_with_min_buy_amount.index
+                o for o in s_orders if o.id != s_order_with_min_buy_amount.id
             ]
 
     # Make sure the solution is correct.

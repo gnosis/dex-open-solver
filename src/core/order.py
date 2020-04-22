@@ -1,6 +1,8 @@
 """Class/Functions for handling Order's."""
 from copy import copy
 from fractions import Fraction as F
+from uuid import uuid4
+
 from .config import Config
 
 
@@ -8,14 +10,16 @@ class Order(object):
     """Class representing an Order."""
     def __init__(
         self,
-        index,
-        account_id,
         buy_token,
         sell_token,
         max_sell_amount,
-        max_xrate
+        max_xrate,
+        account_id=None,
+        id=None
     ):
-        self._index = index
+        if id is None:
+            id = str(uuid4())
+        self._id = id
         self._account_id = account_id
         self._buy_token = buy_token
         self._sell_token = sell_token
@@ -27,8 +31,8 @@ class Order(object):
         self._utility_disreg = 0
 
     @property
-    def index(self):
-        return self._index
+    def id(self):
+        return self._id
 
     @property
     def account_id(self):
@@ -101,18 +105,18 @@ class Order(object):
         self._utility_disreg = new_utility_disreg
 
     @classmethod
-    def load_from_dict(cls, index, order_dict):
+    def load_from_dict(cls, order_dict, id=None):
         buy_amount_ceiled = max(
             Config.MIN_TRADABLE_AMOUNT,
             F(order_dict['buyAmount'])
         )
         return Order(
-            index=index,
-            account_id=order_dict['accountID'],
             buy_token=order_dict['buyToken'],
             sell_token=order_dict['sellToken'],
             max_sell_amount=F(order_dict['sellAmount']),
-            max_xrate=F(order_dict['sellAmount']) / buy_amount_ceiled
+            max_xrate=F(order_dict['sellAmount']) / buy_amount_ceiled,
+            account_id=order_dict['accountID'],
+            id=id
         )
 
     def update_order_dict(self, order_dict):

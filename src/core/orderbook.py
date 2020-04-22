@@ -48,10 +48,10 @@ def compute_solution_metrics(prices, accounts_updated, orders, fee):
             balance_updated = 0
         umax = IntegerTraits.compute_max_utility_term(
             order=order,
-            balance_updated=balance_updated,
             xrate=xrate,
             buy_token_price=buy_token_price,
-            fee=fee
+            fee=fee,
+            balance_updated=balance_updated
         )
 
         if u > umax:
@@ -186,12 +186,12 @@ def compute_objective_value(prices, accounts_updated, orders, fee):
             balance_updated = accounts_updated[order.account_id].get(order.sell_token, 0)
         else:
             balance_updated = 0
-        max_sell_amount_ = min(order.max_sell_amount, order.sell_amount + balance_updated)
         umax = IntegerTraits.compute_max_utility_term(
-            order=order.with_max_sell_amount(max_sell_amount_),
+            order=order,
             xrate=xrate,
             buy_token_price=buy_token_price,
-            fee=fee
+            fee=fee,
+            balance_updated=balance_updated
         )
         umax = max(u, umax)
 

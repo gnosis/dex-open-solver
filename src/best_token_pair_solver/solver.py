@@ -79,7 +79,7 @@ def eligible_token_pairs(orders, fee_token):
 
     # All permutations where the first token is the fee token.
     for s_token in all_tokens - {fee_token}:
-        yield (b_token, fee_token)
+        yield (fee_token, s_token)
 
 
 def main(args):
@@ -111,6 +111,8 @@ def main(args):
         fee=fee,
         arith_traits=IntegerTraits
     )
+
+    return instance
 
 
 def setup_arg_parser(subparsers):

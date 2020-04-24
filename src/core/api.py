@@ -57,18 +57,16 @@ def dump_solution(
 
     # Dump touched orders.
     orders = sorted(orders, key=lambda order: order.id)
-    orders_ids = {order.id for order in orders}
-    original_orders = [
-        order for index, order in enumerate(instance['orders'])
-        if str(index) in orders_ids
-    ]
-    touched_orders = []
-    for order, original_order in zip(orders, original_orders):
+    original_orders = {
+        str(index): order for index, order in enumerate(instance['orders'])
+    }
+    instance['orders'] = []
+    for order in orders:
         if order.sell_amount > 0:
+            original_order = original_orders[order.id]
             original_order['execSellAmount'] = str(order.sell_amount)
             original_order['execBuyAmount'] = str(order.buy_amount)
-            touched_orders.append(original_order)
-    instance['orders'] = touched_orders
+            instance['orders'].append(original_order)
 
     # Restore fee as a float (is Decimal).
     instance['fee']['ratio'] = float(instance['fee']['ratio'])

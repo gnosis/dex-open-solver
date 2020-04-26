@@ -30,7 +30,7 @@ def rounding_buffer(
         yield (b_orders, s_orders)
     finally:
         # Restore original max sell amounts.
-        for order, original_max_sell_amount in zip(b_orders, b_max_sell_amounts):
-            order.force_set_max_sell_amount(original_max_sell_amount)
-        for order, original_max_sell_amount in zip(s_orders, s_max_sell_amounts):
-            order.force_set_max_sell_amount(original_max_sell_amount)
+        for order, previous_max_sell_amount in zip(b_orders, b_max_sell_amounts):
+            order.max_sell_amount = previous_max_sell_amount
+        for order, previous_max_sell_amount in zip(s_orders, s_max_sell_amounts):
+            order.max_sell_amount = previous_max_sell_amount

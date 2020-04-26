@@ -144,8 +144,8 @@ class SmartContractTraits(BaseTraits):
     def compute_disregarded_utility_term(
         cls, order, xrate, buy_token_price, fee, balance_updated
     ):
-        min_buy_amount = order.max_sell_amount / order.max_xrate
-        max_sell_amount = order.max_sell_amount
+        max_sell_amount = order.original_max_sell_amount
+        min_buy_amount = max_sell_amount / order.max_xrate
         fee_denom = fee.value.denominator
         sell_token_price = buy_token_price / xrate
         buy_amount = order.buy_amount
@@ -158,9 +158,7 @@ class SmartContractTraits(BaseTraits):
         remaining_amount = max_sell_amount - sell_amount
         leftover_sell_amount = min(remaining_amount, balance_updated)
         limit_term_left = sell_token_price * max_sell_amount
-        limit_term_right = (
-            min_buy_amount * buy_token_price * fee_denom
-        ) // (fee_denom - 1)
+        limit_term_right = min_buy_amount * buy_token_price * fee_denom // (fee_denom - 1)
 
         limit_term = 0
         if limit_term_left > limit_term_right:
@@ -181,8 +179,9 @@ class SmartContractTraits(BaseTraits):
     def compute_utility_term(
         cls, order, xrate, buy_token_price, fee
     ):
-        min_buy_amount = order.max_sell_amount / order.max_xrate
-        max_sell_amount = order.max_sell_amount
+        max_sell_amount = order.original_max_sell_amount
+        min_buy_amount = max_sell_amount / order.max_xrate
+        assert min_buy_amount.denominator == 1
         buy_amount = order.buy_amount
 
         sell_amount = cls.compute_sell_from_buy_amount(

@@ -24,6 +24,7 @@ class Order(object):
         self._buy_token = buy_token
         self._sell_token = sell_token
         self._max_sell_amount = max_sell_amount
+        self._original_max_sell_amount = max_sell_amount
         self._max_xrate = max_xrate
         self._buy_amount = 0
         self._sell_amount = 0
@@ -58,14 +59,14 @@ class Order(object):
     def max_sell_amount(self):
         return self._max_sell_amount
 
+    @property
+    def original_max_sell_amount(self):
+        """The value for max sell amount passed in the constructor."""
+        return self._original_max_sell_amount
+
     @max_sell_amount.setter
     def max_sell_amount(self, new_max_sell_amount):
-        assert new_max_sell_amount <= self._max_sell_amount
-        self._max_sell_amount = new_max_sell_amount
-
-    # This method is equal to the max_sell_amount setter above
-    # except it allows the max sell amount to be increased.
-    def force_set_max_sell_amount(self, new_max_sell_amount):
+        assert new_max_sell_amount <= self._original_max_sell_amount
         self._max_sell_amount = new_max_sell_amount
 
     @property

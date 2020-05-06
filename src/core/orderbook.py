@@ -285,3 +285,39 @@ def is_economic_viable(orders, prices, fee, arith_traits):
 
 def is_trivial(orders):
     return count_nr_exec_orders(orders) == 0
+
+
+# Note: this is an approximation, there is no guarantee that the returned
+# subset is economically viable (or even feasible) at all.
+def compute_approx_economic_viable_subset(orders, prices, fee, arith_traits):
+    # Shortcut.
+    if Config.MIN_AVERAGE_ORDER_FEE == 0:
+        return orders
+
+    # Remove empty orders.
+    orders_by_dec_volume = [o for o in orders if o.buy_amount > 0]
+
+    # Sort orders by decreasing volume
+    orders_by_dec_volume = sorted(
+        orders_by_dec_volume,
+        key=lambda o: o.buy_amount * prices[o.buy_token],
+        reverse=True
+    )
+
+    # Return maximal subset of orders that satisfy the minimum economic
+    # viability constraint (but may fail to satify other constraints)
+    i = 1
+    while compute_average_order_fee(
+        orders_by_dec_volume[:i], prices, fee, arith_traits
+    ) >= Config.MIN_AVERAGE_ORDER_FEE:
+        i += 1
+
+    orders = orders[:i]
+
+    # If there are only buy orders or only sell orders in the subset then
+    # the subset can be further reduced to the trivial solution.
+    if len({o.buy_token for o in orders}) == 1:
+        return []
+
+    return orders
+

@@ -8,7 +8,7 @@ from math import ceil, floor
 from src.core.api import dump_solution
 from src.core.config import Config
 from src.core.orderbook import (count_nr_exec_orders, is_economic_viable,
-                                is_trivial)
+                                is_trivial, compute_approx_economic_viable_subset)
 from src.core.round import round_solution
 from src.core.validation import validate
 
@@ -427,9 +427,22 @@ def solve_token_pair_and_fee_token_economic_viable(
         if is_economic_viable(orders, prices, fee, IntegerTraits) or is_trivial(orders):
             break
 
+        # If solution cannot be made economically viable (assuming prices wouldn't change)
+        if len(compute_approx_economic_viable_subset(
+            orders, prices, fee, IntegerTraits
+        )) == 0:
+            orders, prices = TRIVIAL_SOLUTION
+            break
+
         # Find and remove the order paying the least fee.
-        b_order_with_min_buy_amount = min(b_orders, key=lambda o: o.buy_amount)
-        s_order_with_min_buy_amount = min(s_orders, key=lambda o: o.buy_amount)
+        b_order_with_min_buy_amount = min(
+            [o for o in b_orders if o.buy_amount > 0],
+            key=lambda o: o.buy_amount
+        )
+        s_order_with_min_buy_amount = min(
+            [o for o in s_orders if o.buy_amount > 0],
+            key=lambda o: o.buy_amount
+        )
 
         if b_order_with_min_buy_amount.buy_amount * prices[b_buy_token]\
            < s_order_with_min_buy_amount.buy_amount * prices[s_buy_token]:

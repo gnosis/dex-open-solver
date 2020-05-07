@@ -1,0 +1,1850 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass scrreprt
+\begin_preamble
+\usepackage[utopia]{mathdesign}
+\usepackage[T1]{fontenc}
+
+\usepackage[font=small,labelfont=bf,format=plain]{caption}
+
+\renewcommand{\sfdefault}{phv}
+\newcounter{DecompositionCounter}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows,positioning} 
+\end_preamble
+\use_default_options true
+\begin_modules
+theorems-ams
+theorems-ams-extended
+\end_modules
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Chapter
+Token pair execution
+\end_layout
+
+\begin_layout Section
+Summay
+\end_layout
+
+\begin_layout Standard
+This document describes an algorithm for matching a set of orders between
+ a pair of tokens, maximizing our current objective function.
+ Its primary motivation is to help understanding the code in the open solver,
+ so that it can be truly 
+\emph on
+open
+\emph default
+ (further audited/extended by anyone).
+\end_layout
+
+\begin_layout Section
+Notation
+\end_layout
+
+\begin_layout Standard
+Notation is based on Tom's paper.
+ The problem consists of a set of 
+\begin_inset Formula $n$
+\end_inset
+
+ orders.
+ An order 
+\begin_inset Formula $o_{i}=\left(b_{i},s_{i},\overline{y}_{i},\pi_{i}\right)$
+\end_inset
+
+, 
+\begin_inset Formula $0<i\leq n$
+\end_inset
+
+, is defined by the buy and sell tokens 
+\begin_inset Formula $b_{i},s_{i}$
+\end_inset
+
+, the maximum sell amount 
+\begin_inset Formula $\overline{y}_{i}$
+\end_inset
+
+, and maximum exchange rate 
+\begin_inset Formula $\pi_{i}$
+\end_inset
+
+.
+ The actual executed buy and sell amounts for order 
+\begin_inset Formula $o_{i}$
+\end_inset
+
+ are denoted as 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ and 
+\begin_inset Formula $y_{i}$
+\end_inset
+
+, respectively.
+ An executed order 
+\begin_inset Formula $o_{i}$
+\end_inset
+
+ is called 
+\emph on
+unfilled
+\emph default
+, 
+\emph on
+partial
+\emph default
+, or 
+\emph on
+filled
+\emph default
+ if 
+\begin_inset Formula $y_{i}=0$
+\end_inset
+
+, 
+\begin_inset Formula $y_{i}\in\left]0,\overline{y}_{i}\right[$
+\end_inset
+
+, or 
+\begin_inset Formula $y_{i}=\overline{y}_{i}$
+\end_inset
+
+, respectively.
+\end_layout
+
+\begin_layout Standard
+The current problem considers only two tokens, 
+\begin_inset Formula $\tau_{1},\tau_{2}$
+\end_inset
+
+, and thus the set of orders can be partitioned in two: the set 
+\begin_inset Formula $B$
+\end_inset
+
+ of orders that buy 
+\begin_inset Formula $\tau_{1}$
+\end_inset
+
+ and the set 
+\begin_inset Formula $S$
+\end_inset
+
+ of orders that sell 
+\begin_inset Formula $\tau_{1}$
+\end_inset
+
+ (or equivalently, that buy 
+\begin_inset Formula $\tau_{2}$
+\end_inset
+
+).
+ That is, 
+\begin_inset Formula $B\cup S=\left\{ 1,\ldots,n\right\} $
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $r_{i}=y_{i}/x_{i}$
+\end_inset
+
+ be the exchange rate associated with order 
+\begin_inset Formula $o_{i}$
+\end_inset
+
+.
+ For simplicity, the fee is not considered in this document.
+\end_layout
+
+\begin_layout Section
+Problem
+\end_layout
+
+\begin_layout Subsection
+Structural constraints
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Structural-constraints"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Description
+uniform
+\begin_inset space ~
+\end_inset
+
+clearing
+\begin_inset space ~
+\end_inset
+
+price All orders are executed according to a unique exchange rate 
+\begin_inset Formula $r$
+\end_inset
+
+.
+ More formally, the exchange rate 
+\begin_inset Formula $r$
+\end_inset
+
+ for the problem satisfies 
+\begin_inset Formula $r_{i}=r,\forall_{i\in B}$
+\end_inset
+
+ and 
+\begin_inset Formula $1/r_{j}=r,\forall_{j\in S}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Description
+limited
+\begin_inset space ~
+\end_inset
+
+sell
+\begin_inset space ~
+\end_inset
+
+amount For every order 
+\begin_inset Formula $o_{i}$
+\end_inset
+
+, condition 
+\begin_inset Formula $y_{i}\leq\overline{y}_{i}$
+\end_inset
+
+ must hold.
+\end_layout
+
+\begin_layout Description
+limit
+\begin_inset space ~
+\end_inset
+
+price For every executed order 
+\begin_inset Formula $o_{i}$
+\end_inset
+
+, i.e.
+ where 
+\begin_inset Formula $y_{i}>0$
+\end_inset
+
+, condition 
+\begin_inset Formula $r_{i}\leq\pi_{i}$
+\end_inset
+
+ must hold.
+\end_layout
+
+\begin_layout Description
+token
+\begin_inset space ~
+\end_inset
+
+balance The amounts of token 
+\begin_inset Formula $\tau_{2}$
+\end_inset
+
+ bought and sold must be equal for every order,
+\begin_inset Formula 
+\begin{align*}
+\sum_{i\in B}y_{i} & =\sum_{j\in S}x_{j}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+Note the assymetry: While token 
+\begin_inset Formula $\tau_{2}$
+\end_inset
+
+ is perfectly balanced, the constraints above imply,
+\begin_inset Formula 
+\begin{align*}
+\sum_{i\in B}x_{i} & =\Phi^{2}\sum_{j\in S}y_{j}
+\end{align*}
+
+\end_inset
+
+that is, the amounts of token 
+\begin_inset Formula $\tau_{1}$
+\end_inset
+
+ bought are less than what is sold (the difference counts towards the fee).
+ Token 
+\begin_inset Formula $\tau_{1}$
+\end_inset
+
+ is therefore imbalanced, so it must either be the fee token, or connected
+ to the fee token (via orders selling fee for 
+\begin_inset Formula $\tau_{1}$
+\end_inset
+
+) so that the imbalance can be traded for fee.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Objective
+\end_layout
+
+\begin_layout Standard
+The function to optimize, known as 
+\emph on
+disregarded utility over all orders
+\emph default
+, is defined as
+\begin_inset Formula 
+\begin{equation}
+f\left(r,\mathbf{y}\right)=p_{1}\sum_{i\in B}\frac{\left(2y_{i}-\overline{y}_{i}\right)\left(\pi_{i}-r\right)}{\pi_{i}r}\left[r\leq\pi_{i}\right]+p_{1}\sum_{j\in S}\frac{\left(2y_{j}-\overline{y}_{j}\right)\left(\pi_{j}r-1\right)}{\pi_{j}r}\left[r\geq1/\pi_{j}\right]\label{eq:objective_fun}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Note that this function is non-linear - the sell amounts 
+\begin_inset Formula $y_{i}$
+\end_inset
+
+, exchange rate 
+\begin_inset Formula $r$
+\end_inset
+
+, and price 
+\begin_inset Formula $p_{1}$
+\end_inset
+
+ of token 
+\begin_inset Formula $\tau_{1}$
+\end_inset
+
+ are unkowns.
+ It is also non-differentiable due to the conditions in square brackets.
+\end_layout
+
+\begin_layout Section
+Optimal execution for a given exchange rate
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:execution"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+An easier problem is to find the executed amounts 
+\begin_inset Formula $\mathbf{y}$
+\end_inset
+
+ when the exchange rate 
+\begin_inset Formula $r$
+\end_inset
+
+ is known.
+ In that case, the objective function simplifies to,
+\begin_inset Formula 
+\begin{equation}
+f\left(\mathbf{y}\right)=p_{1}\sum_{i\in B'}\frac{\left(2y_{i}-\overline{y}_{i}\right)\left(\pi_{i}-r\right)}{\pi_{i}r}+p_{1}\sum_{j\in S'}\frac{\left(2y_{j}-\overline{y}_{j}\right)\left(\pi_{j}r-1\right)}{\pi_{j}r}\label{eq:amount-objective}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $B'=\left\{ i|i\in B\wedge r\leq\pi_{i}\right\} $
+\end_inset
+
+, and 
+\begin_inset Formula $S'=\left\{ j|j\in S\wedge r\geq1/\pi_{j}\right\} $
+\end_inset
+
+, are constants.
+\end_layout
+
+\begin_layout Subsection
+Intuition
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Intuition"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Recall that the only variables in the above expression are the 
+\begin_inset Formula $y_{i}$
+\end_inset
+
+.
+ Since, for any function 
+\begin_inset Formula $g$
+\end_inset
+
+,
+\begin_inset Formula 
+\begin{align*}
+\arg_{x}\max g\left(c+x\right) & =\arg_{x}\max g\left(x\right)\\
+\arg_{x}\max g\left(cx\right) & =\arg_{x}\max g\left(x\right),\forall c>0
+\end{align*}
+
+\end_inset
+
+equation 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:amount-objective"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ can be further simplified to,
+\begin_inset Formula 
+\[
+f\left(\mathbf{y}\right)=\sum_{i\in B'}a_{i}y_{i}+\sum_{j\in S'}b_{j}y_{j}
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $a_{i}=\left(1-r/\pi_{i}\right)$
+\end_inset
+
+ and 
+\begin_inset Formula $b_{i}=\left(r-1/\pi_{i}\right)$
+\end_inset
+
+ are non-negative constants (guaranteed by the definition of 
+\begin_inset Formula $B'$
+\end_inset
+
+ and 
+\begin_inset Formula $S'$
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+It is clear that, in order to maximize 
+\begin_inset Formula $f$
+\end_inset
+
+ above, the 
+\begin_inset Formula $y_{i}$
+\end_inset
+
+ should be maximized as much as possible.
+ Due to the maximum sell amount constraint, the amount that may be assigned
+ to each 
+\begin_inset Formula $y_{i}$
+\end_inset
+
+ is of course bounded.
+ Additionally, due to the token balance constraint, an 
+\begin_inset Formula $y_{i}$
+\end_inset
+
+ increment of an order 
+\begin_inset Formula $i\in B'$
+\end_inset
+
+ must be balanced by some 
+\begin_inset Formula $y_{j}$
+\end_inset
+
+ increment of one (or more) orders 
+\begin_inset Formula $j\in S'$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+It helps to consider a greedy approach to solving what looks like a kind
+ of a resource allocation problem.
+ Imagine any 
+\begin_inset Formula $y_{i}$
+\end_inset
+
+ can be incremented by some amount, that is 
+\begin_inset Formula $y_{i}<\overline{y}_{i}$
+\end_inset
+
+ for all orders.
+ Which order 
+\begin_inset Formula $o_{i}$
+\end_inset
+
+ should be chosen? Naturally, to maximize 
+\begin_inset Formula $f$
+\end_inset
+
+, the 
+\begin_inset Formula $y_{i}$
+\end_inset
+
+ for which its constant coefficient (
+\begin_inset Formula $a_{i}$
+\end_inset
+
+ or 
+\begin_inset Formula $b_{i})$
+\end_inset
+
+ is the largest should be selected.
+ Any positive amount that can be added to that 
+\begin_inset Formula $y_{i}$
+\end_inset
+
+ with will have a higher impact on maximizing 
+\begin_inset Formula $f$
+\end_inset
+
+ than if it was assigned to any other order.
+ This intuitively determines the sequence of execution: by decreasing value
+ of 
+\begin_inset Formula $a_{i},$
+\end_inset
+
+
+\begin_inset Formula $b_{i}$
+\end_inset
+
+, coefficients
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+Side note: if 
+\begin_inset Formula $f$
+\end_inset
+
+ was volume then these coefficients would not exist.
+ That is why optimizing for volume objective does not guarantee that orders
+ with higher limit prices will be executed first.
+\end_layout
+
+\end_inset
+
+.
+ Furthermore remark that ordering orders by decreasing value of 
+\begin_inset Formula $a_{i}$
+\end_inset
+
+, 
+\begin_inset Formula $b_{i}$
+\end_inset
+
+ is equivelent to ordering orders by decreasing value of 
+\begin_inset Formula $\pi_{i}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The above reasoning also provides an intuition about how much should each
+ 
+\begin_inset Formula $y_{i}$
+\end_inset
+
+ be incremented - as much as possible.
+ Roughly, the limit is a function of the minimum of 
+\begin_inset Formula $\overline{y}_{i}$
+\end_inset
+
+ and maximum buying capacity on the 
+\begin_inset Quotes eld
+\end_inset
+
+other side
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename token_pair-2-2-2.pdf
+	scale 80
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:matching-example"
+
+\end_inset
+
+Token pair matching with 4 orders: 
+\begin_inset Formula $S=\left\{ 1,2\right\} $
+\end_inset
+
+, and 
+\begin_inset Formula $B=\left\{ 3,4\right\} $
+\end_inset
+
+.
+ The blue curve shows the value of the objective function (yy) as a function
+ of the exchange rate (xx), assuming an optimal order execution (i.e.
+ 
+\begin_inset Formula $\mathbf{y}$
+\end_inset
+
+) for that exchange rate.
+ The two dashed green vertical lines on the right signal the limit prices
+ of the buy orders, 
+\begin_inset Formula $\pi_{3}=2$
+\end_inset
+
+ and 
+\begin_inset Formula $\pi_{4}=2.5$
+\end_inset
+
+.
+ The orange dashed vertical lines on the left signal the inverse of limit
+ prices of the sell orders, 
+\begin_inset Formula $\nicefrac{1}{\pi_{1}}=\nicefrac{1}{3}$
+\end_inset
+
+ and 
+\begin_inset Formula $\nicefrac{1}{\pi_{2}}=0.5$
+\end_inset
+
+.
+ The optimal exchange rate is close to 1.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Example
+Figure
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:matching-example"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ illustrates a matching between two orders and two counter-orders on a token
+ pair.
+ Assume that the exchange rate 
+\begin_inset Formula $r=1$
+\end_inset
+
+ is given, and therefore 
+\begin_inset Formula $S'=S$
+\end_inset
+
+, and 
+\begin_inset Formula $B'=B$
+\end_inset
+
+.
+ The algorithm first selects the order with highest limit price, which is
+ the leftmost sell order with 
+\begin_inset Formula $\pi_{1}=3$
+\end_inset
+
+.
+ Then matches this order with the buy order with highest limit price, which
+ is the rightmost buy order with 
+\begin_inset Formula $\pi_{4}=2.5$
+\end_inset
+
+.
+ The traded amounts 
+\begin_inset Formula $y_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $y_{2}$
+\end_inset
+
+ can be obtained from the sell amount limits of both orders, taking into
+ consideration the token balance constraint and the fact that 
+\begin_inset Formula $r$
+\end_inset
+
+ is known.
+ For example, 
+\begin_inset Formula $y_{1}\leftarrow\min\left(\overline{y}_{1},\overline{y}_{2}r\right)$
+\end_inset
+
+.
+ After this step either 
+\begin_inset Formula $o_{1}$
+\end_inset
+
+ or 
+\begin_inset Formula $o_{4}$
+\end_inset
+
+ (or both) is fully executed, which dictates which order should be considered
+ next: whichever is partially executed, or if none, the order with the highest
+ limit price.
+ This ping-pong continues, in the direction from the outer orders to the
+ inner orders, until no more orders can be selected.
+\end_layout
+
+\begin_layout Subsection
+More formally
+\end_layout
+
+\begin_layout Lemma
+\begin_inset CommandInset label
+LatexCommand label
+name "lem:all-filled-from-at-least-one-side"
+
+\end_inset
+
+There is an optimal solution 
+\begin_inset Formula $\mathbf{y}^{\star}=\arg_{\mathbf{y}}\max f\left(y\right)$
+\end_inset
+
+ where either a) all buy orders 
+\begin_inset Formula $B'$
+\end_inset
+
+ are filled, or b) all sell orders 
+\begin_inset Formula $S'$
+\end_inset
+
+ are filled, or c) all orders are filled.
+\end_layout
+
+\begin_layout Proof
+Increasing 
+\begin_inset Formula $y_{i}$
+\end_inset
+
+ of an order can only increase 
+\begin_inset Formula $f\left(y\right)$
+\end_inset
+
+, that is 
+\begin_inset Formula $\partial f/\partial y_{i}>0$
+\end_inset
+
+ (see sec.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Intuition"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+).
+ Therefore if there is both a buy order and a sell order in the solution
+ that are not completely filled, the solution cannot be optimal.
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+%
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Lemma
+\begin_inset CommandInset label
+LatexCommand label
+name "lem:execution-order"
+
+\end_inset
+
+For the optimal solution 
+\begin_inset Formula $\mathbf{y}^{\star}=\arg_{\mathbf{y}}\max f\left(\mathbf{y}\right)$
+\end_inset
+
+, it must be the case that 
+\begin_inset Formula $y_{j}>0\Rightarrow y_{i}=\overline{y}_{i}$
+\end_inset
+
+ for all pair of buy orders 
+\begin_inset Formula $o_{i},o_{j}$
+\end_inset
+
+ such that 
+\begin_inset Formula $\pi_{i}>\pi_{j}$
+\end_inset
+
+.
+ Similarly for the sell orders.
+\end_layout
+
+\begin_layout Proof
+The only 
+\emph on
+active
+\emph default
+ constraints involved in the subproblem obtained when 
+\begin_inset Formula $r$
+\end_inset
+
+ is given are the 
+\emph on
+token balance
+\emph default
+ and 
+\emph on
+limited sell amount
+\emph default
+ constraints (all others are satisfied by construction).
+ The previous lemma asserts that either the buy orders 
+\begin_inset Formula $B'$
+\end_inset
+
+ are completely filled, or the sell orders 
+\begin_inset Formula $S'$
+\end_inset
+
+ are completely filled, or both.
+ Assuming the first, the token balance constraint becomes,
+\begin_inset Formula 
+\begin{align*}
+\sum_{i\in B'}\overline{y}_{i} & =\sum_{j\in S}y_{j}r
+\end{align*}
+
+\end_inset
+
+The problem is therefore reduced to maximize 
+\begin_inset Formula $f$
+\end_inset
+
+ subject to 
+\begin_inset Formula $\sum_{j\in S}y_{j}=c$
+\end_inset
+
+ where 
+\begin_inset Formula $c$
+\end_inset
+
+ is a constant.
+ The result follows since 
+\begin_inset Formula $\partial f/\partial y_{j}\propto\pi_{j}$
+\end_inset
+
+ (see sec.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Intuition"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+).
+ Assuming instead that the sell orders 
+\begin_inset Formula $S'$
+\end_inset
+
+ are completely filled leads to the same conclusion.
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+%
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Lemma
+\begin_inset CommandInset label
+LatexCommand label
+name "lem:execution-runtime"
+
+\end_inset
+
+Finding the optimal solution to 
+\begin_inset Formula $\mathbf{y}^{\star}=\arg_{\mathbf{y}}\max f\left(\mathbf{y}\right)$
+\end_inset
+
+ can be done in 
+\begin_inset Formula $O\left(n\log n\right)$
+\end_inset
+
+, where 
+\begin_inset Formula $n$
+\end_inset
+
+ is the number of orders.
+\end_layout
+
+\begin_layout Proof
+The previous lemma determines the order of execution.
+ It requires sorting buy and sell orders, and then a linear traversal to
+ actually compute the traded amounts.
+\end_layout
+
+\begin_layout Section
+Finding the optimal exchange rate
+\end_layout
+
+\begin_layout Standard
+The problem of executing all orders in a token pair when the exchange rate
+ 
+\begin_inset Formula $r$
+\end_inset
+
+ is not known is slightly more complex.
+ The main idea behind the algorithm is to split the domain of the optimal
+ exchange rate,
+\begin_inset Formula 
+\begin{align}
+r^{\star} & \in\left[\min_{j\in S}\frac{1}{\pi_{j}},\max_{i\in B}\pi_{i}\right]\label{eq:r-domain}
+\end{align}
+
+\end_inset
+
+into a finite set of intervals 
+\begin_inset Formula $\mathcal{C}$
+\end_inset
+
+ that cover the entire domain, but where the local maximum of 
+\begin_inset Formula $f$
+\end_inset
+
+ can be computed analytically.
+ The choice of 
+\begin_inset Formula $\mathcal{C}$
+\end_inset
+
+ is natural: the minimal set of intervals that, by turning the parts in
+ square brackets of eq.
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:objective_fun"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ into constants, make 
+\begin_inset Formula $f$
+\end_inset
+
+ differentiable.
+ That is, the intervals determined by consecutive limit prices.
+\end_layout
+
+\begin_layout Example
+For the example of fig.
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:matching-example"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+,
+\begin_inset Formula 
+\[
+\mathcal{C}=\left\{ \left[\nicefrac{1}{\pi_{1}},\nicefrac{1}{\pi_{2}}\right],\left[\nicefrac{1}{\pi_{2}},\pi_{3}\right],\left[\pi_{3},\pi_{4}\right]\right\} 
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Local optima for a given interval
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Local-optima"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For each interval 
+\begin_inset Formula $\left[a,b\right]\in\mathcal{C}$
+\end_inset
+
+, the objective function 
+\begin_inset Formula $f$
+\end_inset
+
+ reduces to something very similar to eq.
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:amount-objective"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+,
+\begin_inset Formula 
+\begin{equation}
+f\left(r,\mathbf{y}\right)=p_{1}\sum_{i\in B'}\frac{\left(2y_{i}-\overline{y}_{i}\right)\left(\pi_{i}-r\right)}{\pi_{i}r}+p_{1}\sum_{j\in S'}\frac{\left(2y_{j}-\overline{y}_{j}\right)\left(\pi_{j}r-1\right)}{\pi_{j}r}\label{eq:objective-interval-fun}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $B'=\left\{ i|i\in B\wedge b\leq\pi_{i}\right\} $
+\end_inset
+
+, and 
+\begin_inset Formula $S'=\left\{ j|j\in S\wedge a\geq1/\pi_{j}\right\} $
+\end_inset
+
+, are constants, and 
+\begin_inset Formula $r\in\left[a,b\right]$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+To simplify this problem up to a point where it is possible to solve it
+ analytically, orders are partioned into three subsets 
+\begin_inset Formula $U,P,F$
+\end_inset
+
+ according if they are unfilled, partially filled, or completely filled.
+ Assume for now that we somehow know these subsets.
+ Then the previous equation can be rewritten as,
+\begin_inset Formula 
+\begin{align*}
+f\left(r,\mathbf{y}\right)= & p_{1}\sum_{i\in B'\cap P}\frac{\left(2y_{i}-\overline{y}_{i}\right)\left(\pi_{i}-r\right)}{\pi_{i}r}+p_{1}\sum_{i\in B'\cap U}\frac{-\overline{y}_{i}\left(\pi_{i}-r\right)}{\pi_{i}r}+p_{1}\sum_{i\in B'\cap F}\frac{\overline{y}_{i}\left(\pi_{i}-r\right)}{\pi_{i}r}+\\
++ & p_{1}\sum_{j\in S'\cap P}\frac{\left(2y_{j}-\overline{y}_{j}\right)\left(\pi_{j}r-1\right)}{\pi_{j}r}+p_{1}\sum_{j\in S'\cap U}\frac{-\overline{y}_{j}\left(\pi_{j}r-1\right)}{\pi_{j}r}+p_{1}\sum_{j\in S'\cap F}\frac{\overline{y}_{j}\left(\pi_{j}r-1\right)}{\pi_{j}r}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Lemma
+Any solution to 
+\begin_inset Formula $r^{\star},\mathbf{y}^{\star}=\arg_{r,\mathbf{y}}\max f\left(r,\mathbf{y}\right)$
+\end_inset
+
+ for an optimal exchange rate 
+\begin_inset Formula $r^{\star}\in\left[a,b\right]\in\mathcal{C}$
+\end_inset
+
+ contains at least one filled order and at most one partial order.
+\end_layout
+
+\begin_layout Proof
+Given that the domain of 
+\begin_inset Formula $r^{\star}$
+\end_inset
+
+ is not empty (eq.
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:r-domain"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+) and since all orders from one side must be completely filled (lemma
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:amount-objective"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+) then at least one order must be fully filled.
+ Lemma 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:execution-order"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ asserts that can be at most one partially filled counter on the other side.
+\end_layout
+
+\begin_layout Standard
+From the previous lemma we know there is at most one partially filled buy
+ order 
+\begin_inset Formula $o_{k}$
+\end_inset
+
+ or a partially filled sell order 
+\begin_inset Formula $o_{l}$
+\end_inset
+
+ in the optimal solution.
+ Using this fact, and removing constant terms and positive multiplicative
+ factors, 
+\begin_inset Formula $f$
+\end_inset
+
+ can be rewritten as,
+\begin_inset Formula 
+\begin{align}
+f\left(r,\mathbf{y}\right)= & \frac{\left(2y_{k}-\overline{y}_{k}\right)\left(\pi_{k}-r\right)}{\pi_{k}r}+\frac{\left(2y_{l}-\overline{y}_{l}\right)\left(\pi_{l}r-1\right)}{\pi_{l}r}+\frac{c}{r}\label{eq:analytic-obj-function}
+\end{align}
+
+\end_inset
+
+with constant
+\begin_inset Formula 
+\begin{align*}
+c & =-\sum_{i\in B'\cap U}\overline{y}_{i}+\sum_{i\in B'\cap F}\overline{y}_{i}+\sum_{j\in S'\cap U}\overline{y}_{j}/\pi_{j}-\sum_{j\in S'\cap F}\overline{y}_{j}/\pi_{j}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The full constrained optimization problem that needs to be solved analytically
+ is to maximize eq.
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:analytic-obj-function"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ subject to,
+\begin_inset Formula 
+\begin{eqnarray*}
+ & y_{k}+\sum_{i\in B'\cap F}\overline{y}_{i}-r(y_{l}+\sum_{j\in S'\cap F}\overline{y}_{j})=0 & \mathrm{(token\,balance)}\\
+ & y_{k}\leq\overline{y}_{k} & \mathrm{(limit\,sell\,amount)}\\
+ & y_{l}\leq\overline{y}_{l} & \mathrm{(limit\,sell\,amount)}\\
+ & 1/\pi_{l}\leq r\leq\pi_{k} & \mathrm{(limit\,price)}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The problem can be solved using the method of Lagrange multipliers.
+ That is, the local maxima of the above optimization problem are the solutions
+ of the following system of equations,
+\begin_inset Formula 
+\begin{equation}
+\begin{cases}
+\nabla f\left(r,\mathbf{y},\mathbf{s}\right)-\sum_{i=1}^{5}\lambda_{i}\nabla g_{i}\left(r,\mathbf{y},\mathbf{s}\right) & =0\\
+\bigwedge_{i=1}^{5}g_{i}\left(r,\mathbf{y},\mathbf{s}\right) & =0
+\end{cases}\label{eq:lagrange-model}
+\end{equation}
+
+\end_inset
+
+where a set 
+\begin_inset Formula $\mathbf{s}$
+\end_inset
+
+ of 
+\emph on
+slack variables
+\emph default
+ are introduced to rewrite the constraint inequations into equations.
+ The five 
+\begin_inset Formula $g_{i}$
+\end_inset
+
+ correspond the transformed constraints:
+\begin_inset Formula 
+\begin{align*}
+g_{1}\left(r,\mathbf{y},\mathbf{s}\right)= & y_{k}+\sum_{i\in B'\cap F}\overline{y}_{i}-r(y_{l}+\sum_{j\in S'\cap F}\overline{y}_{j})\\
+g_{2}\left(r,\mathbf{y},\mathbf{s}\right)= & y_{k}+s_{1}^{2}-\overline{y}_{k}\\
+g_{3}\left(r,\mathbf{y},\mathbf{s}\right)= & y_{l}+s_{2}^{2}-\overline{y}_{l}\\
+g_{4}\left(r,\mathbf{y},\mathbf{s}\right)= & r-\pi_{k}+s_{3}^{2}\\
+g_{5}\left(r,\mathbf{y},\mathbf{s}\right)= & \frac{1}{r}-\pi_{l}+s_{4}^{2}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The system of equations in eq.
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:lagrange-model"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ contains three 
+\emph on
+structural
+\emph default
+ variables (
+\begin_inset Formula $r,y_{k},y_{l})$
+\end_inset
+
+, four 
+\emph on
+slack
+\emph default
+ variables 
+\begin_inset Formula $s_{1},\ldots,s_{4}$
+\end_inset
+
+, and five lagrange multipliers 
+\begin_inset Formula $\lambda_{1},\ldots,\lambda_{5}$
+\end_inset
+
+.
+ Its five real-valued roots can be determined analytically:
+\begin_inset Formula 
+\begin{align*}
+r & =\pi_{k}\\
+r & =1/\pi_{l}\\
+r & =\frac{4\left(\overline{y}_{k}+a\right)}{\pi_{l}\left(3\overline{y}_{k}+2a+c\right)+y_{l}+2b}\\
+r & =\frac{\sqrt{\pi_{k}\pi_{l}\left(\overline{y}_{k}+a-c\right)+\pi_{k}\overline{y}_{l}}}{\sqrt{2}\sqrt{\pi_{l}\overline{y}_{l}+\pi_{l}b}}\\
+r & =\frac{\overline{y}_{k}+a}{\overline{y}_{l}+b}
+\end{align*}
+
+\end_inset
+
+with constants 
+\begin_inset Formula $a=\sum_{i\in B'\cap F}\overline{y}_{i}$
+\end_inset
+
+ and 
+\begin_inset Formula $b=\sum_{j\in S'\cap F}\overline{y}_{j}$
+\end_inset
+
+.
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The first and second roots occur when the limit price constraints are at
+ their boundaries.
+ The third root occurs when all 
+\begin_inset Formula $B'$
+\end_inset
+
+ orders are completely filled, and there is one order in 
+\begin_inset Formula $S'$
+\end_inset
+
+ only partially filled.
+ Inversely, the fourth root occurs when all 
+\begin_inset Formula $S'$
+\end_inset
+
+ orders are completely filled, and there is one order in 
+\begin_inset Formula $B'$
+\end_inset
+
+ only partially filled.
+ Finally, the fifth root occurs when all orders are totally filled.
+\end_layout
+
+\begin_layout Subsection
+Partitioning orders
+\end_layout
+
+\begin_layout Standard
+It is implicit in the previous section that the sets of orders 
+\begin_inset Formula $U,P,F$
+\end_inset
+
+ that are unfilled, partial filled, or complete filled, are known in advance.
+ Of course, this is not the case, since they are determined by the value
+ of variable 
+\begin_inset Formula $r$
+\end_inset
+
+ we're interested in finding.
+ The algorithm thus needs to make several guesses, fortunately not many:
+\end_layout
+
+\begin_layout Lemma
+\begin_inset CommandInset label
+LatexCommand label
+name "lem:upf-partitions"
+
+\end_inset
+
+The set of solutions to 
+\begin_inset Formula $r^{\star},\mathbf{y}^{\star}=\arg_{r,\mathbf{y}}\max f\left(r,\mathbf{y}\right)$
+\end_inset
+
+ for an optimal exchange rate 
+\begin_inset Formula $r^{\star}\in\left[a,b\right]$
+\end_inset
+
+ partition the set of orders into unfilled, partially filled, and completely
+ filled in at most 
+\begin_inset Formula $O\left(n\right)$
+\end_inset
+
+ different ways.
+\end_layout
+
+\begin_layout Proof
+Given 
+\begin_inset Formula $r^{\star}\in\left[a,b\right]$
+\end_inset
+
+ orders can be split into 
+\begin_inset Formula $B'$
+\end_inset
+
+ and 
+\begin_inset Formula $S'$
+\end_inset
+
+ as described in the previous section.
+ By lemma
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:all-filled-from-at-least-one-side"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ it is known that all orders from one of the sides will be completely filled.
+ From lemma
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:execution-order"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ it is known that orders on the other side must partition into a subset
+ of unfilled orders, at most one partial order, and a subset of filled orders.
+ The same lemma shows that these subsets are ordered by increasing limit
+ price of the order.
+ There are at most 
+\begin_inset Formula $n-1$
+\end_inset
+
+ orders on the each side, which determine the number of ways a side can
+ be partitioned into.
+\end_layout
+
+\begin_layout Subsection
+Complete algorithm description
+\end_layout
+
+\begin_layout Standard
+Roughly, the algorithm for matching all orders of a token pair takes the
+ following steps:
+\end_layout
+
+\begin_layout Enumerate
+Sort orders by limit price 
+\begin_inset Formula $\pi_{i}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+For each interval 
+\begin_inset Formula $\left[a,b\right]$
+\end_inset
+
+ where 
+\begin_inset Formula $a$
+\end_inset
+
+ and 
+\begin_inset Formula $b$
+\end_inset
+
+ are consecutive limit exchange rates given by the limit prices of the orders
+ (
+\begin_inset Formula $\pi_{i}$
+\end_inset
+
+ for buy orders, 
+\begin_inset Formula $1/\pi_{i}$
+\end_inset
+
+ for sell orders), and for each possible partition 
+\begin_inset Formula $U,P,F$
+\end_inset
+
+ of orders, compute and store 
+\begin_inset Formula $r$
+\end_inset
+
+ for local optima to the resulting optimization problem, as described in
+ section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Local-optima"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+For each collected 
+\begin_inset Formula $r$
+\end_inset
+
+ corresponding to a local optimum, compute the traded amounts as described
+ in section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:execution"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+, and evaluate the objective.
+ Return solution corresponding to the global optimum.
+\end_layout
+
+\begin_layout Lemma
+The previously described algorithm runs in time 
+\begin_inset Formula $O\left(n^{2}\log n\right)$
+\end_inset
+
+, where 
+\begin_inset Formula $n$
+\end_inset
+
+ is the number of orders.
+\end_layout
+
+\begin_layout Proof
+There are at most 
+\begin_inset Formula $n-1$
+\end_inset
+
+ limit exchange rate intervals to be considered.
+ For each interval there are 
+\begin_inset Formula $O\left(n\right)$
+\end_inset
+
+ partitions to consider according to lemma
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:upf-partitions"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+ The computation of the roots runs in time 
+\begin_inset Formula $O\left(1\right)$
+\end_inset
+
+.
+ Steps 1 and 2 thus runs in 
+\begin_inset Formula $O\left(n^{2}\right)$
+\end_inset
+
+.
+ The number of roots is proportional to the number of orders 
+\begin_inset Formula $n$
+\end_inset
+
+ (5 per interval).
+ By lemma
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "lem:execution-runtime"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+, executing orders for one root takes 
+\begin_inset Formula $O\left(n\log n\right)$
+\end_inset
+
+.
+ Therefore, step 3 runs in 
+\begin_inset Formula $O\left(n^{2}\log n\right)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Differences to the implementation
+\end_layout
+
+\begin_layout Standard
+There are some significant differences between the exposition here and the
+ implementation:
+\end_layout
+
+\begin_layout Itemize
+The implementation also correctly handles the fee.
+ This would make the formulas here terribly more complex.
+\end_layout
+
+\begin_layout Itemize
+The implementation skips many intervals and combinations of 
+\begin_inset Formula $U,P,F$
+\end_inset
+
+ order subsets that can be proven suboptimal efficiently.
+\end_layout
+
+\begin_layout Itemize
+The implementation also handles side constraints: maximum number of orders,
+ minimum tradable amount, and economic viability.
+ The don't change the worst case runtime complexity of the algorithm except
+ for the latter - increases it by a factor of 
+\begin_inset Formula $n$
+\end_inset
+
+.
+ Unfortunately, with these constraints the solutions obtained are no longer
+ guaranteed to be optimal.
+\end_layout
+
+\begin_layout Section
+Open questions
+\end_layout
+
+\begin_layout Standard
+It seems that there is always exactly one local optimum, which is the global
+ optimum, in all instances of this problem we've inspected so far.
+ Is this true in general? How to prove it?
+\end_layout
+
+\begin_layout Section
+All examples
+\end_layout
+
+\begin_layout Standard
+There are a handfull of examples in the 
+\begin_inset Quotes eld
+\end_inset
+
+repo/data
+\begin_inset Quotes erd
+\end_inset
+
+ folder, which were used to verify the math above and the code (fig.
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:All-examples"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename obj_zoo.pdf
+	scale 60
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:All-examples"
+
+\end_inset
+
+All examples in 
+\begin_inset Quotes eld
+\end_inset
+
+repo/data
+\begin_inset Quotes erd
+\end_inset
+
+ folder.
+ The red dot is the global optimum, the grey dots are the local optima that
+ were actually computed and evaluated (those that were trivially excluded
+ are not shown).
+ Note also that these examples also take the fee into consideration.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

@@ -40,7 +40,7 @@ class Config:
 
     # Convenience method to compute effective min tradable amount.
     @classproperty
-    def MIN_RATIONAL_TRADABLE_AMOUNT(cls):
+    def MIN_RATIONAL_TRADABLE_AMOUNT(self):
         return int(
-            cls.MIN_TRADABLE_AMOUNT * (1 + cls.MIN_TRADABLE_AMOUNT_ROUNDING_TOL)
+            self.MIN_TRADABLE_AMOUNT * (1 + self.MIN_TRADABLE_AMOUNT_ROUNDING_TOL)
         )

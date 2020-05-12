@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 import tempfile
 from collections import namedtuple
 from copy import deepcopy
@@ -15,6 +16,7 @@ from .util import stringify_numeric
 logger = logging.getLogger(__name__)
 
 Fee = namedtuple('Fee', ['token', 'value'])
+Stats = namedtuple('Stats', ['runtime', 'exit_status'])
 
 
 def load_fee(fee_dict):
@@ -43,6 +45,7 @@ def dump_solution(
     orders,
     prices,
     fee,
+    stats,
     arith_traits=IntegerTraits
 ):
     # Dump prices.
@@ -71,11 +74,21 @@ def dump_solution(
     # Restore fee as a float (is Decimal).
     instance['fee']['ratio'] = float(instance['fee']['ratio'])
 
-    # Dump json.
+    # Convert numeric fields to strings.
     instance = stringify_numeric(instance)
     for order in instance['orders']:
         if 'orderID' in order.keys():
             order['orderID'] = int(order['orderID'])
+
+    # Add solver key.
+    solver = dict()
+    solver['name'] = 'open'
+    solver['args'] = sys.argv
+    solver['runtime'] = stats.runtime
+    solver['exit_status'] = stats.exit_status
+    instance['solver'] = solver
+
+    # Dump json.
     if solution_filename is None:
         solution_file = tempfile.NamedTemporaryFile(
             mode='w+', delete=False, prefix='solution-', suffix='.json'

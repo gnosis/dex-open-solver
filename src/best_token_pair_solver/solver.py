@@ -1,12 +1,14 @@
 import json
 import logging
+import time
 from copy import deepcopy
 from decimal import Decimal as D
 from functools import reduce
 
-from src.core.api import IntegerTraits, dump_solution, load_problem
+from src.core.api import IntegerTraits, Stats, dump_solution, load_problem
 from src.core.orderbook import compute_objective_value, update_accounts
-from src.token_pair_solver.solver import solve_token_pair_and_fee_token_economic_viable
+from src.token_pair_solver.solver import \
+    solve_token_pair_and_fee_token_economic_viable
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +85,8 @@ def eligible_token_pairs(orders, fee_token):
 
 
 def main(args):
+    start_time = time.time()
+
     # Load dict from json.
     instance = json.load(args.instance, parse_float=D)
 
@@ -103,12 +107,16 @@ def main(args):
 
     orders, prices = best_solution
 
+    runtime = time.time() - start_time
+    stats = Stats(runtime=runtime, exit_status="completed")
+
     # Dump solution to file.
     dump_solution(
         instance, args.solution_filename,
         orders,
         prices,
         fee=fee,
+        stats=stats,
         arith_traits=IntegerTraits
     )
 

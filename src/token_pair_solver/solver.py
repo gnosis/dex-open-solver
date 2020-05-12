@@ -1,14 +1,16 @@
 import json
 import logging
+import time
 from copy import deepcopy
 from decimal import Decimal as D
 from fractions import Fraction as F
 from math import ceil, floor
 
-from src.core.api import dump_solution
+from src.core.api import dump_solution, Stats
 from src.core.config import Config
-from src.core.orderbook import (count_nr_exec_orders, is_economic_viable,
-                                is_trivial, compute_approx_economic_viable_subset)
+from src.core.orderbook import (compute_approx_economic_viable_subset,
+                                count_nr_exec_orders, is_economic_viable,
+                                is_trivial)
 from src.core.round import round_solution
 from src.core.validation import validate
 
@@ -362,7 +364,7 @@ def solve_token_pair_and_fee_token(
         if b_buy_token_price is None:
             logger.debug("Could not execute f_orders.")
             return TRIVIAL_SOLUTION
-            
+
         logger.debug("Price of %s\t:\t%s", b_buy_token, b_buy_token_price)
         logger.debug("Price of %s\t:\t%s", s_buy_token, b_buy_token_price / xrate)
         logger.debug(
@@ -461,6 +463,8 @@ def solve_token_pair_and_fee_token_economic_viable(
 
 
 def main(args):
+    start_time = time.time()
+
     # Load dict from json.
     instance = json.load(args.instance, parse_float=D)
 
@@ -477,12 +481,16 @@ def main(args):
         args.token_pair, accounts, b_orders, s_orders, f_orders, fee, xrate=args.xrate
     )
 
+    runtime = time.time() - start_time
+    stats = Stats(runtime=runtime, exit_status="completed")
+
     # Dump solution to file.
     dump_solution(
         instance, args.solution_filename,
         orders,
         prices,
         fee=fee,
+        stats=stats,
         arith_traits=IntegerTraits()
     )
 

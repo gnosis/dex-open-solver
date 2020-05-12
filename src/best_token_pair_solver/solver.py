@@ -6,7 +6,7 @@ from decimal import Decimal as D
 from functools import reduce
 
 from src.core.api import IntegerTraits, Stats, dump_solution, load_problem
-from src.core.orderbook import compute_objective_value, update_accounts
+from src.core.orderbook import compute_objective, update_accounts
 from src.token_pair_solver.solver import \
     solve_token_pair_and_fee_token_economic_viable
 
@@ -30,6 +30,7 @@ def match_token_pair(token_pair, accounts, orders, fee):
         order for order in orders
         if order.buy_token == s_buy_token and order.sell_token == b_buy_token
     ]
+
     if len(s_orders) == 0:
         return TRIVIAL_SOLUTION
 
@@ -59,7 +60,7 @@ def match_token_pair_and_evaluate(token_pair, accounts, orders, fee):
     update_accounts(accounts_updated, orders)
 
     # Compute objective value for current token pair solution.
-    objective = compute_objective_value(prices, accounts_updated, orders, fee)
+    objective = compute_objective(prices, accounts_updated, orders, fee)
 
     return (objective, (orders, prices))
 

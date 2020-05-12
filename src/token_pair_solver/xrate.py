@@ -7,7 +7,10 @@ xrate* = argmax_{X, xrate} f(X, xrate)
 s.t.
 x_i * xrate <= yb_i, for all x_i in X.
 xrate <= pi_i, for all pi_i in PI.
+
+See https://github.com/gnosis/dex-open-solver/blob/master/doc/token_pair/token_pair.pdf.
 """
+
 import logging
 from collections import deque, namedtuple
 from fractions import Fraction as F
@@ -17,22 +20,79 @@ from math import sqrt
 from src.core.config import Config
 
 from .amount import compute_buy_amounts
-from .orderbook import compute_objective_rational
+from .orderbook import compute_objective_rational, prune_unrealizable_orders
 
 logger = logging.getLogger(__name__)
 
 
-def xrate_interval_iterator(b_orders, s_orders, fee):
-    """Exchange rate interval [xrate_lb, xrate_lb] iterator.
+IntervalData = namedtuple('IntervalData', ['xrate', 'orders', 'partial'])
+
+
+# Generate the b_order indexes that needs to execute to satisfy current
+# given s_sell_amount and xrate intervals, and the equation:
+# xrate = b_sell_amount / (s_sell_amount * (1 - fee))
+# <=> b_sell_amount = s_sell_amount * xrate * (1 - fee).
+def xrate_interval_iterator_b_orders(
+    b_orders,
+    s_sell_amount_lb,
+    s_sell_amount_ub,
+    xrate_lb,
+    xrate_ub,
+    fee
+):
+    b_sell_amount_lb = s_sell_amount_lb * xrate_lb * (1 - fee.value)
+    b_sell_amount_ub = s_sell_amount_ub * xrate_ub * (1 - fee.value)
+
+    cur_b_sell_amount_ub = sum(b_order.max_sell_amount for b_order in b_orders)
+    for i in range(len(b_orders)):
+        cur_b_sell_amount_lb = cur_b_sell_amount_ub \
+            - b_orders[i].max_sell_amount
+        if cur_b_sell_amount_ub < b_sell_amount_lb:
+            break
+        if cur_b_sell_amount_lb <= b_sell_amount_ub:
+            yield i
+        cur_b_sell_amount_ub -= b_orders[i].max_sell_amount
+
+
+# Generate the s_order indexes that needs to execute to satisfy current
+# given b_sell_amount and xrate intervals, and the equation:
+# xrate = b_sell_amount / (s_sell_amount * (1 - fee))
+# <=> s_sell_amount = b_sell_amount / (xrate * (1 - fee)).
+def xrate_interval_iterator_s_orders(
+    s_orders,
+    b_sell_amount_lb,
+    b_sell_amount_ub,
+    xrate_lb,
+    xrate_ub,
+    fee
+):
+    s_sell_amount_lb = b_sell_amount_lb / (xrate_ub * (1 - fee.value))
+    s_sell_amount_ub = b_sell_amount_ub / (xrate_lb * (1 - fee.value))
+
+    cur_s_sell_amount_ub = sum(s_order.max_sell_amount for s_order in s_orders)
+    for i in range(len(s_orders)):
+        cur_s_sell_amount_lb = cur_s_sell_amount_ub \
+            - s_orders[i].max_sell_amount
+        if cur_s_sell_amount_ub < s_sell_amount_lb:
+            break
+        if cur_s_sell_amount_lb <= s_sell_amount_ub:
+            yield i
+        cur_s_sell_amount_ub -= s_orders[i].max_sell_amount
+
+
+def xrate_interval_iterator(b_orders, s_orders, fee, optimal_trivial_xrate=None):
+    """Exchange rate interval iterator.
 
     Iterates through intervals [xrate_lb, xrate_ub] of possible values for xrate,
     where xrate_lb, xrate_ub are defined by the max_xrate's of two orders that are
     consecutive in the optimal execution order.
 
-    At each iteration yields the xrate interval, and two sorted lists: the b_orders
-    and s_orders, which can be executed if xrate is in the given interval.
+    At each iteration yields an IntervalData object containing the xrate interval,
+    two sorted lists: b_exec_orders and s_exec_orders, which can be executed
+    if xrate is in the given interval, and a pair of indexes into the exec order lists
+    pointing to the first partially executed order in each corresponding list.
 
-    Skips iterations where this interval is trivially empty.
+    Skips some suboptimal intervals.
     """
     assert len(b_orders) > 0 and len(s_orders) > 0
     B, S = 0, 1
@@ -61,10 +121,10 @@ def xrate_interval_iterator(b_orders, s_orders, fee):
     s_exec_orders = deque([order.data for order in all_orders if order.type == S])
 
     # Total sell amount of b_orders in the b_exec_orders list.
-    b_exec_sell_amount = 0
+    b_exec_sell_amount_ub = 0
 
     # Total sell amount of s_orders in the s_exec_orders list.
-    s_exec_sell_amount = sum(s_order.max_sell_amount for s_order in s_orders)
+    s_exec_sell_amount_ub = sum(s_order.max_sell_amount for s_order in s_orders)
 
     # Main loop.
     for order_i in range(len(all_orders) - 1):
@@ -74,11 +134,21 @@ def xrate_interval_iterator(b_orders, s_orders, fee):
         # Update exec_orders / exec_sell_amounts.
         if order_type == B:
             b_exec_orders.appendleft(order)
-            b_exec_sell_amount += order.max_sell_amount
+            b_exec_sell_amount_ub += order.max_sell_amount
 
         if order_type == S:
             s_exec_orders.popleft()
-            s_exec_sell_amount -= order.max_sell_amount
+            s_exec_sell_amount_ub -= order.max_sell_amount
+
+        # If optimal_trivial_xrate is given, then consider only xrate intervals for
+        # which optimal_trivial_xrate is an endpoint.
+        if optimal_trivial_xrate is not None:
+            test_xrates = {order_xrate, next_order_xrate}
+            if order_i > 0:
+                prev_order_xrate = all_orders[order_i - 1].xrate
+                test_xrates.add(prev_order_xrate)
+            if optimal_trivial_xrate not in test_xrates:
+                continue
 
         # If no b_order was yet visited, there can't be a match => go to next order.
         if len(b_exec_orders) == 0:
@@ -93,72 +163,111 @@ def xrate_interval_iterator(b_orders, s_orders, fee):
         xrate_lb = next_order_xrate
         xrate_ub = order_xrate
 
-        # The following block of code is an optimization, it tries to shrink the above
-        # xrate interval, potentially making it empty thus skipping the current iteration.
-
-        # In any optimal execution, either the the b_order right above the optimal xrate
-        # or the s_order right below will be partially executed (i.e. non empty).
-
-        # In case xrate is in [xrate_lb, xrate_ub] then:
-        # total b_exec_sell_amount is in [b_exec_sell_amount_lb, b_exec_sell_amount_ub].
-        # total s_exec_sell_amount is in [s_exec_sell_amount_lb, s_exec_sell_amount_ub].
-
-        # ub(exec_sell_amount) is the sold amount of all executed orders.
-        b_exec_sell_amount_ub = b_exec_sell_amount
-        s_exec_sell_amount_ub = s_exec_sell_amount
-
         # lb(exec_sell_amount) is the sold amount of all executed orders, except the
         # last one, which potentially may be only partially executed.
-        b_exec_sell_amount_lb = b_exec_sell_amount - b_exec_orders[0].max_sell_amount
-        s_exec_sell_amount_lb = s_exec_sell_amount - s_exec_orders[0].max_sell_amount
+        b_exec_sell_amount_lb = b_exec_sell_amount_ub - b_exec_orders[0].max_sell_amount
+        s_exec_sell_amount_lb = s_exec_sell_amount_ub - s_exec_orders[0].max_sell_amount
 
-        # Interval arithmetic on the equation:
-        # xrate = b_exec_sell_amount / (s_exec_sell_amount * (1 - fee)).
-        if s_exec_sell_amount_ub > 0:
-            xrate_lb = max(
-                xrate_lb,
-                b_exec_sell_amount_lb / (s_exec_sell_amount_ub * (1 - fee.value))
+        # yield fixed set of s_exec_orders and distinct sets b_exec_orders
+        for i in xrate_interval_iterator_b_orders(
+            b_exec_orders,
+            s_exec_sell_amount_lb, s_exec_sell_amount_ub,
+            xrate_lb, xrate_ub,
+            fee
+        ):
+            yield IntervalData(
+                xrate=(xrate_lb, xrate_ub),
+                orders=(list(b_exec_orders), list(s_exec_orders)),
+                partial=(i, 0)
             )
 
-        if s_exec_sell_amount_lb > 0:
-            xrate_ub = min(
-                xrate_ub,
-                b_exec_sell_amount_ub / (s_exec_sell_amount_lb * (1 - fee.value))
+        # yield fixed set of b_exec_orders and distinct sets s_exec_orders
+        for i in xrate_interval_iterator_s_orders(
+            s_exec_orders,
+            b_exec_sell_amount_lb, b_exec_sell_amount_ub,
+            xrate_lb, xrate_ub,
+            fee
+        ):
+            yield IntervalData(
+                xrate=(xrate_lb, xrate_ub),
+                orders=(list(b_exec_orders), list(s_exec_orders)),
+                partial=(0, i)
             )
-
-        # Skip current iteration if current xrate interval can't contain the optimal.
-        if xrate_lb > xrate_ub:
-            continue
-
-        yield xrate_lb, xrate_ub, list(b_exec_orders), list(s_exec_orders)
-
-
-# TODO: check if possible to describe the set of roots more compactly.
-
-def yb(order):
-    return order.max_sell_amount
-
-
-def pi(order):
-    return order.max_xrate
 
 
 class SymbolicSolver:
+    Constants = namedtuple(
+        'Constants',
+        ['b_pi', 'b_yb', 'b_yb_F', 's_pi', 's_yb', 's_yb_F', 'c', 'f']
+    )
+
     def __init__(self, fee):
         self.fee = fee
+
+    # Iterates through the set of unfilled orders.
+    def orders_U(self, orders, partial_idx):
+        yield from orders[:partial_idx]
+
+    # Iterates through the set of completely filled orders.
+    def orders_F(self, orders, partial_idx):
+        yield from orders[(partial_idx + 1):]
+
+    # Total sell amount of completely filled orders.
+    def sum_yb_F(self, orders, partial_idx):
+        return sum(
+            order.max_sell_amount
+            for order in self.orders_F(orders, partial_idx)
+        )
+
+    # Constant c - see "Local optima for a given interval" in the documentation.
+    def c_constant(self, b_orders, b_partial_idx, s_orders, s_partial_idx):
+        b_sum_yb_F, b_sum_yb_U = (
+            sum(
+                o.max_sell_amount for o in fn(b_orders, b_partial_idx)
+            ) for fn in (self.orders_F, self.orders_U)
+        )
+        s_sum_ybpi_F, s_sum_ybpi_U = (
+            sum(
+                o.max_sell_amount / o.max_xrate for o in fn(s_orders, s_partial_idx)
+            ) for fn in (self.orders_F, self.orders_U)
+        )
+        f = 1 - self.fee.value
+        return f * (b_sum_yb_F - b_sum_yb_U) - s_sum_ybpi_F + s_sum_ybpi_U
+
+    def compute_constants(self, interval_data):
+        b_orders, s_orders = interval_data.orders
+        b_partial_idx, s_partial_idx = interval_data.partial
+
+        b_pi = b_orders[b_partial_idx].max_xrate
+        s_pi = s_orders[s_partial_idx].max_xrate
+
+        b_yb = b_orders[b_partial_idx].max_sell_amount
+        s_yb = s_orders[s_partial_idx].max_sell_amount
+
+        b_yb_F = self.sum_yb_F(b_orders, b_partial_idx)
+        s_yb_F = self.sum_yb_F(s_orders, s_partial_idx)
+
+        c = self.c_constant(b_orders, b_partial_idx, s_orders, s_partial_idx)
+        f = 1 - self.fee.value
+
+        return self.Constants(
+            b_pi=b_pi, b_yb=b_yb, b_yb_F=b_yb_F,
+            s_pi=s_pi, s_yb=s_yb, s_yb_F=s_yb_F,
+            c=c, f=f
+        )
 
     # Root 1:
     # xrate == b_pi * (1 - fee)
     # examples: data/token_pair-1-1-5.json
-    def root1(self, b_exec_orders, s_exec_orders):
-        b_pi = pi(b_exec_orders[0])
+    def root1(self, b_exec_order):
+        b_pi = b_exec_order.max_xrate
         return b_pi * (1 - self.fee.value)
 
     # Root 2:
     # xrate == 1 / (s_pi * (1 - fee))
     # examples: data/token_pair-2-2-1.json
-    def root2(self, b_exec_orders, s_exec_orders):
-        s_pi = pi(s_exec_orders[0])
+    def root2(self, s_exec_order):
+        s_pi = s_exec_order.max_xrate
         return 1 / (s_pi * (1 - self.fee.value))
 
     # Root 3:
@@ -166,24 +275,17 @@ class SymbolicSolver:
     # b_exec_order[0] fully filled,
     # s_exec_order[0] partially filled
     # examples: data/token_pair-3-2-1.json (local optimum only)
-    def root3(self, b_exec_orders, s_exec_orders):
-        s_pi = pi(s_exec_orders[0])
-        s_yb = yb(s_exec_orders[0])
-        b_yb_sum = sum(yb(b_order) for b_order in b_exec_orders)
-
-        t = sum(
-            yb(s_order) * (2 - s_pi / pi(s_order))
-            for s_order in s_exec_orders[1:]
-        )
-        # since s_pi <= pi(s_order) for all s_order,
-        # then it must be true that
-        assert t >= 0
-
-        f = 1 - self.fee.value
-
+    def root3(self, c):
         fp = Config.FEE_TOKEN_PRICE
-        c = 2 + f + (1 - f**2) / (2 * f * fp)
-        r = 4 * b_yb_sum / (f * (c * s_pi * b_yb_sum + s_yb + t))
+
+        n = 4 * (c.b_yb + c.b_yb_F)
+        d1 = c.f * (c.s_pi * (c.c + 2 * (c.b_yb + c.b_yb_F)) + c.s_yb + 2 * c.s_yb_F)
+        d2 = c.s_pi * (
+            c.b_yb * (1 + c.f**2 * (2 * fp - 1))
+            + c.b_yb_F * (1 - c.f**2)
+        ) / (2 * fp)
+
+        r = n / (d1 + d2)
         return r
 
     # Root 4:
@@ -191,30 +293,19 @@ class SymbolicSolver:
     # b_exec_order[0] partially filled,
     # s_exec_order[0] fully filled
     # examples: data/token_pair-1-1-1.json, data/token_pair-2-1-1.json
-    def root4(self, b_exec_orders, s_exec_orders):
-        b_pi = pi(b_exec_orders[0])
-
-        b_yb_sum = sum(yb(b_order) for b_order in b_exec_orders)
-        s_yb_sum = sum(yb(s_order) for s_order in s_exec_orders)
-
-        f = 1 - self.fee.value
-
-        a = sum(yb(s_order) / pi(s_order) for s_order in s_exec_orders)
-        t = b_pi * (f * b_yb_sum + a) / (2 * f * s_yb_sum)
-        r = sqrt(t) if t >= 0 else None
-
-        # This is the only irrational root. Approximating:
-        return F(r)
+    def root4(self, c):
+        n = c.b_pi * (c.s_pi * (-c.c + c.f * c.b_yb + 2 * c.f * c.b_yb_F) + c.s_yb)
+        d = 2 * c.f * c.s_pi * (c.s_yb + c.s_yb_F)
+        t = n / d
+        r = F(sqrt(t)) if t >= 0 else None
+        return r
 
     # Root 5:
     # xrate in ]1/s_pi, b_pi[,
     # all orders fully filled
     # examples: data/token_pair-1-1-{2,4}.json, data/token_pair-2-2-2.json
-    def root5(self, b_exec_orders, s_exec_orders):
-        b_yb_sum = sum(yb(b_order) for b_order in b_exec_orders)
-        s_yb_sum = sum(yb(s_order) for s_order in s_exec_orders)
-
-        r = b_yb_sum / (s_yb_sum * (1 - self.fee.value))
+    def root5(self, c):
+        r = (c.b_yb + c.b_yb_F) / (c.f * (c.s_yb + c.s_yb_F))
         return r
 
     # Computes objective value from order execution via `compute_buy_amounts`.
@@ -231,12 +322,13 @@ class SymbolicSolver:
 
     # Collect the local optima that lie strictly within the given interval.
     # Also returns the id (3-5) of the root for debugging purposes
-    def collect_local_optima_within_interval(
-        self, xrate_lb, xrate_ub, b_exec_orders, s_exec_orders
-    ):
-        xrates = map(lambda f: f(b_exec_orders, s_exec_orders), [
+    def collect_local_optima_within_interval(self, interval_data):
+        constants = self.compute_constants(interval_data)
+        xrates = list(map(lambda f: f(constants), [
             self.root3, self.root4, self.root5
-        ])
+        ]))
+        # Filter out solutions that fall outside the given xrate interval.
+        xrate_lb, xrate_ub = interval_data.xrate
         xrates = [
             (xrate, i + 2) for i, xrate in enumerate(xrates)
             if xrate is not None and xrate > xrate_lb and xrate < xrate_ub
@@ -250,10 +342,11 @@ class SymbolicSolver:
         return xrates
 
     # Compute the optimal xrate in the interval ]xrate_lb, xrate_ub[.
-    def solve_interval(self, xrate_lb, xrate_ub, b_orders, s_orders):
-        xrates = self.collect_local_optima_within_interval(
-            xrate_lb, xrate_ub, b_orders, s_orders
-        )
+    def solve_interval(self, interval_data):
+        xrates = self.collect_local_optima_within_interval(interval_data)
+
+        xrate_lb, xrate_ub = interval_data.xrate
+        b_orders, s_orders = interval_data.orders
 
         if len(xrates) == 0:
             return (None, None)
@@ -290,9 +383,9 @@ class SymbolicSolver:
     # are more interesting, e.g. for price estimation (see issue #25).
     def collect_local_optima_for_trivial_solution(self, b_orders, s_orders):
         xrates = [
-            (self.root1([b_order], None), 0) for b_order in b_orders
+            (self.root1(b_order), 0) for b_order in b_orders
         ] + [
-            (self.root2(None, [s_order]), 1) for s_order in s_orders
+            (self.root2(s_order), 1) for s_order in s_orders
         ]
         # aggregate by root value
         xrates = sorted(xrates, key=lambda xi: xi[0])
@@ -329,17 +422,21 @@ class SymbolicSolver:
         return (opt[0], opt[2])
 
     def solve(self, b_orders, s_orders):
-        # xrate local optima within each xrate interval.
-        xrates_obj = [
-            self.solve_interval(
-                xrate_lb, xrate_ub, b_exec_orders, s_exec_orders
-            )
-            for xrate_lb, xrate_ub, b_exec_orders, s_exec_orders
-            in xrate_interval_iterator(b_orders, s_orders, self.fee)
-        ]
+        b_orders, s_orders = prune_unrealizable_orders(b_orders, s_orders, self.fee)
+
         # xrate local optima for trivial solution.
-        xrates_obj += [
+        xrates_obj = [
             self.solve_trivial(b_orders, s_orders)
+        ]
+
+        # find the xrate for the trivial solution with maximum objective.
+        best_trivial_xrate = max(xrates_obj, key=lambda x: x[1])[0]
+
+        xrates_obj += [
+            self.solve_interval(interval_data)
+            for interval_data in xrate_interval_iterator(
+                b_orders, s_orders, self.fee, best_trivial_xrate
+            )
         ]
 
         # Filter out invalid xrates.

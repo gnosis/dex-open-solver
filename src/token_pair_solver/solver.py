@@ -19,7 +19,8 @@ from .api import load_problem
 from .orderbook import (IntegerTraits, RationalTraits, aggregate_orders_prices,
                         compute_b_buy_token_imbalance,
                         compute_objective_rational,
-                        count_orders_satisfying_xrate)
+                        count_orders_satisfying_xrate,
+                        prune_unrealizable_orders)
 from .price import compute_token_price_to_cover_imbalance, create_market_order
 from .round import rounding_buffer
 from .xrate import find_best_xrate
@@ -264,6 +265,8 @@ def solve_token_pair_and_fee_token(
 
     Sets b_orders/s_orders/f_orders (integral) buy_amounts for the best execution.
     """
+    # remove trivially infeasible orders
+    b_orders, s_orders = prune_unrealizable_orders(b_orders, s_orders, fee)
 
     if len(b_orders) == 0 or len(s_orders) == 0:
         return TRIVIAL_SOLUTION

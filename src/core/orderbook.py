@@ -156,7 +156,7 @@ def count_nr_exec_orders(orders):
     return sum(order.buy_amount > 0 for order in orders)
 
 
-def compute_objective_value(prices, accounts_updated, orders, fee):
+def compute_objective(prices, accounts_updated, orders, fee):
     """Compute objective function value of solution."""
     # Init objective values.
     total_u = 0
@@ -320,4 +320,3 @@ def compute_approx_economic_viable_subset(orders, prices, fee, arith_traits):
         return []
 
     return orders
-

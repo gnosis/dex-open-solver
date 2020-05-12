@@ -137,3 +137,16 @@ def aggregate_orders_prices(
 
 def count_orders_satisfying_xrate(b_orders, xrate, fee):
     return sum(xrate <= b_order.max_xrate * (1 - fee.value) for b_order in b_orders)
+
+
+def prune_unrealizable_orders(b_orders, s_orders, fee):
+    """Remove orders that are trivially unmatchable.
+
+    Return filtered pair (b_orders, s_orders).
+    """
+    f2 = (1 - fee.value) ** 2
+    b_max_xrate = max([o.max_xrate for o in b_orders])
+    s_max_xrate = max([o.max_xrate for o in s_orders])
+    b_orders = [o for o in b_orders if o.max_xrate * f2 >= 1 / s_max_xrate]
+    s_orders = [o for o in s_orders if o.max_xrate * f2 >= 1 / b_max_xrate]
+    return b_orders, s_orders

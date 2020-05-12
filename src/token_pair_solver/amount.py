@@ -7,10 +7,13 @@ and an exchange rate xrate, solves the following optimization problem:
 X* = argmax_{X} f(X, xrate)
 
 where X is an array of buy amounts.
+
+See https://github.com/gnosis/dex-open-solver/blob/master/doc/token_pair/token_pair.pdf.
 """
 import logging
 
 from src.core.config import Config
+
 
 logger = logging.getLogger(__name__)
 

@@ -20,6 +20,10 @@ Example of matching the token pair which leads to higher objective value:
 python -m src.match solver_greedy/data/token_pair-1-1-1.json best-token-pair
 ```
 
+## Algorithm
+
+See [here](doc/token_pair/token_pair.pdf).
+
 ## Validating results
 
 To validate results, the NLP solver must be used (from dex-solver):

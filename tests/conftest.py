@@ -15,6 +15,11 @@ hypothesis.settings.register_profile(
     'debug', verbosity=hypothesis.Verbosity.verbose, max_examples=1000
 )
 
+# In the "paranoid" profile 10000 examples are generated.
+hypothesis.settings.register_profile(
+    'paranoid', verbosity=hypothesis.Verbosity.verbose, max_examples=10000
+)
+
 # Use default profile if no profile is passed as a command line option
 hypothesis.settings.load_profile(os.getenv(u'HYPOTHESIS_PROFILE', 'default'))
 

@@ -14,8 +14,9 @@ See https://github.com/gnosis/dex-open-solver/blob/master/doc/token_pair/token_p
 import logging
 from collections import deque, namedtuple
 from fractions import Fraction as F
+from functools import lru_cache
 from itertools import groupby
-from math import sqrt
+from math import sqrt, log, ceil
 
 from src.core.config import Config
 
@@ -395,6 +396,53 @@ class SymbolicSolver:
         ]
         return xrates
 
+    # The objective function is non-deferentiable but has only one
+    # local optimum. It's semi-derivative has only one zero, which
+    # can be found in O(log2(n)) steps using binary search.
+    def solve_trivial_bin_search(self, xrates, b_orders, s_orders):
+
+        # Remove duplicates and sort.
+        xrates = sorted(list(set(xrates)))
+
+        # Memoizing this function saves a few computations,
+        # since the code below may evaluate the objective on the
+        # same point multiple times.
+        @lru_cache(maxsize=ceil(log(len(xrates))))
+        def f(xrate):
+            return self.compute_objective(xrate, b_orders, s_orders)
+
+        # If the least as at most 2 elements, there's no need for binary search.
+        if len(xrates) <= 2:
+            xrate = max(xrates, key=f)
+            return xrate, f(xrate)
+
+        # Case where the optimal is the leftmost element.
+        if f(xrates[0]) > f(xrates[1]):
+            return xrates[0], f(xrates[0])
+
+        # Case where the optimal is the rightmost element.
+        if f(xrates[-1]) > f(xrates[-2]):
+            return xrates[-1], f(xrates[-1])
+
+        # binary search on the semi-derivative of f(xrate)
+        left = 1
+        right = len(xrates) - 1
+        center = (left + right) // 2
+        while left != center and right != center:
+            d_left = f(xrates[left]) - f(xrates[left - 1])
+            d_right = f(xrates[right]) - f(xrates[right - 1])
+            d_center = f(xrates[center]) - f(xrates[center - 1])
+            if d_left * d_center > 0:
+                assert d_left > 0
+                left = center
+            else:
+                assert d_right < 0
+                assert d_center < 0
+                right = center
+            center = (left + right) // 2
+
+        return xrates[center], f(xrates[center])
+
     # Compute the optimal xrate for the trivial solution (zero buy/sell amounts).
     def solve_trivial(self, b_orders, s_orders):
         xrates = self.collect_local_optima_for_trivial_solution(b_orders, s_orders)
@@ -402,24 +450,11 @@ class SymbolicSolver:
         if len(xrates) == 0:
             return (None, None)
 
-        xrates_obj = [
-            (
-                xrate,
-                root_ids,
-                self.compute_objective(xrate, b_orders, s_orders)
-            ) for xrate, root_ids in xrates
-        ]
+        # Ignore root_ids.
+        xrates = [xrate for xrate, root_ids in xrates]
+        xrate, obj = self.solve_trivial_bin_search(xrates, b_orders, s_orders)
 
-        opt = max(xrates_obj, key=lambda xio: xio[2])
-
-        logger.debug("Exchange rate candidates for trivial solution:")
-        for xrate, root_ids, obj in xrates_obj:
-            logger.debug(
-                "\troots%s : (%s, %s)\t" + ("[local optimum]" if obj == opt[2] else ""),
-                root_ids, xrate, obj
-            )
-
-        return (opt[0], opt[2])
+        return xrate, obj
 
     def solve(self, b_orders, s_orders):
         b_orders, s_orders = prune_unrealizable_orders(b_orders, s_orders, self.fee)

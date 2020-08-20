@@ -350,14 +350,23 @@ def solve_token_pair_and_fee_token(
             if b_buy_token_price is None:
                 continue
 
+            assert objective is not None
+
             logger.debug("Objective\t:\t%s\t[best=%s]", objective, best_objective)
 
+            # Optimization: Since f_orders are ordered by limit xrate, the objective
+            # as a function of the size of the prefix used has only one optimum.
+            # In other words, we can stop trying to augmenting the set of f_orders
+            # once adding a new f_order degrades the objective.
+            if best_objective is not None and objective < best_objective:
+                break
+
             # Update best solution found so far if necessary.
-            if best_objective is None or objective >= best_objective:
-                best_objective = objective
-                best_solution = deepcopy(
-                    (adjusted_xrate, b_buy_token_price, b_orders, s_orders, f_orders)
-                )
+            assert best_objective is None or objective >= best_objective
+            best_objective = objective
+            best_solution = deepcopy(
+                (adjusted_xrate, b_buy_token_price, b_orders, s_orders, f_orders)
+            )
 
         xrate, b_buy_token_price, b_orders, s_orders, f_orders = best_solution
 
@@ -374,18 +383,27 @@ def solve_token_pair_and_fee_token(
             "Amounts of %s bought in exchange for %s:",
             b_buy_token, s_buy_token
         )
-        logger.debug("\t%s", [b_order.buy_amount for b_order in b_orders])
+        logger.debug("\t%s", [
+            {b_order.id: b_order.buy_amount}
+            for b_order in b_orders if b_order.buy_amount > 0
+        ])
         logger.debug(
             "Amounts of %s bought in exchange for %s:",
             s_buy_token, b_buy_token
         )
-        logger.debug("\t%s", [s_order.buy_amount for s_order in s_orders])
+        logger.debug("\t%s", [
+            {s_order.id: s_order.buy_amount}
+            for s_order in s_orders if s_order.buy_amount > 0
+        ])
 
         logger.debug(
             "Amounts of %s bought in exchange for FEE (%s):",
             b_buy_token, fee.token
         )
-        logger.debug("\t%s", [f_order.buy_amount for f_order in f_orders])
+        logger.debug("\t%s", [
+            {f_order.id: f_order.buy_amount}
+            for f_order in f_orders if f_order.buy_amount > 0
+        ])
 
     # Aggregate orders and prices.
     orders, prices = aggregate_orders_prices(

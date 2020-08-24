@@ -274,12 +274,19 @@ def is_economic_viable(orders, prices, fee, arith_traits):
         return True
 
     # Shortcut to avoid computing fees.
-    if Config.MIN_AVERAGE_ORDER_FEE == 0:
+    if Config.MIN_AVERAGE_ORDER_FEE == 0 and Config.MIN_ABSOLUTE_ORDER_FEE == 0:
         return True
 
-    average_order_fee = compute_average_order_fee(orders, prices, fee, arith_traits)
+    # Check minimum absolute order fee.
+    if any(
+        o.fee(prices, fee) < Config.MIN_ABSOLUTE_ORDER_FEE
+        for o in orders
+        if o.sell_token != fee.token and o.buy_amount > 0
+    ):
+        return False
 
-    # Compute average fees.
+    # Check minimum average order fee.
+    average_order_fee = compute_average_order_fee(orders, prices, fee, arith_traits)
     return average_order_fee >= Config.MIN_AVERAGE_ORDER_FEE
 
 
@@ -291,8 +298,20 @@ def is_trivial(orders):
 # subset is economically viable (or even feasible) at all.
 def compute_approx_economic_viable_subset(orders, prices, fee, arith_traits):
     # Shortcut.
-    if Config.MIN_AVERAGE_ORDER_FEE == 0:
+    if Config.MIN_AVERAGE_ORDER_FEE == 0 and Config.MIN_ABSOLUTE_ORDER_FEE == 0:
         return orders
+
+    # Compute maximal subset of orders that satisfy the minimum economic
+    # viability constraint (but may fail to satify other constraints)
+
+    # 1. Minimum absolute fee per order.
+    orders = [
+        o for o in orders
+        if o.sell_token == fee.token
+        or o.fee(prices, fee) >= Config.MIN_ABSOLUTE_ORDER_FEE
+    ]
+
+    # 2. Minimum average fee per order.
 
     # Remove empty orders.
     orders_by_dec_volume = [o for o in orders if o.buy_amount > 0]
@@ -300,14 +319,13 @@ def compute_approx_economic_viable_subset(orders, prices, fee, arith_traits):
     # Sort orders by decreasing volume
     orders_by_dec_volume = sorted(
         orders_by_dec_volume,
-        key=lambda o: o.buy_amount * prices[o.buy_token],
+        key=lambda o: o.volume(prices),
         reverse=True
     )
 
-    # Return maximal subset of orders that satisfy the minimum economic
-    # viability constraint (but may fail to satify other constraints)
     i = 1
-    while compute_average_order_fee(
+    while i < len(orders) and \
+        compute_average_order_fee(
         orders_by_dec_volume[:i], prices, fee, arith_traits
     ) >= Config.MIN_AVERAGE_ORDER_FEE:
         i += 1

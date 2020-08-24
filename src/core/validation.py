@@ -67,9 +67,17 @@ def validate(
         else:
             assert token_balances[token] == 0
 
-    # Validate economic viability constraint.
+    # Validate economic viability constraints.
+
+    # Min average fee:
     total_fees = token_balances[fee.token]
     assert total_fees / nr_exec_orders >= Config.MIN_AVERAGE_ORDER_FEE
+
+    # Min absolute fee:
+    assert all(
+        o.fee(prices, fee) >= Config.MIN_ABSOLUTE_ORDER_FEE
+        for o in orders if o.sell_token != fee.token and o.buy_amount > 0
+    )
 
     # Validate account balance constraint.
     assert all(token_balance_account[aID][t] >= 0

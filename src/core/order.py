@@ -168,3 +168,11 @@ class Order(object):
     def set_sell_amount_from_buy_amount(self, *args, **kwargs):
         """Sets the order sell amount from buy amount so that it satisfies xrate."""
         self._sell_amount = self.get_sell_amount_from_buy_amount(*args, **kwargs)
+
+    def volume(self, prices):
+        """Compute order volume."""
+        return self.buy_amount * prices[self.buy_token]
+
+    def fee(self, prices, fee):
+        """Compute order fees."""
+        return self.volume(prices) * fee.value

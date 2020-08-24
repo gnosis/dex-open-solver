@@ -18,6 +18,10 @@ class Config:
     """Minimum average fee payed per order on an admissible solution."""
     MIN_AVERAGE_ORDER_FEE = 0
 
+    """Minimum absolute fee payed per (non fee selling) order on "
+    "an admissible solution."""
+    MIN_ABSOLUTE_ORDER_FEE = 0
+
     # Rounding parameters:
 
     # Rational solver will enforce that tradable amounts are

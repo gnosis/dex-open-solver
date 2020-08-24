@@ -48,6 +48,13 @@ if __name__ == '__main__':
         type=F,
         help="Minimum average fee payed per order on an admissible solution."
     )
+    parser.add_argument(
+        '--min-abs-fee-per-order',
+        default=None,
+        type=F,
+        help="Minimum absolute fee payed per order (not selling the "
+        "fee token) on an admissible solution."
+    )
 
     subparsers = parser.add_subparsers(
         title='subcommand',
@@ -65,6 +72,10 @@ if __name__ == '__main__':
     args.solution_filename = args.solution
 
     Config.MIN_AVERAGE_ORDER_FEE = args.min_avg_fee_per_order
+    if args.min_abs_fee_per_order is None:
+        Config.MIN_ABSOLUTE_ORDER_FEE = Config.MIN_AVERAGE_ORDER_FEE
+    else:
+        Config.MIN_ABSOLUTE_ORDER_FEE = args.min_abs_fee_per_order
 
     handler = logging.StreamHandler()
     formatter = LoggerFormatter(style='{', rationals=args.log_rationals)

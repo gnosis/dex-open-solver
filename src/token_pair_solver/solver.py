@@ -457,6 +457,11 @@ def solve_token_pair_and_fee_token_economic_viable(
             orders, prices = TRIVIAL_SOLUTION
             break
 
+        # Note: to increase performance, we could consider removing all orders that do not
+        # satisfy min_abs_fee_per_order here at once, instead of removing one at a time as
+        # it is currently. The advantage of removing one by one is that it will not remove
+        # more than needed (note that prices, and hence order fees, keep changing).
+          
         # Find and remove the order paying the least fee.
         b_order_with_min_buy_amount = min(
             [o for o in b_orders if o.buy_amount > 0],

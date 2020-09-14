@@ -12,8 +12,7 @@ from .core.config import Config
 logger = logging.getLogger(__name__)
 
 
-if __name__ == '__main__':
-
+def main():
     parser = argparse.ArgumentParser(
         description="Match orders in an orderbook."
     )
@@ -84,3 +83,7 @@ if __name__ == '__main__':
     logger.setLevel(log_level)
 
     args.exec_subcommand(args)
+
+
+if __name__ == '__main__':
+    main()

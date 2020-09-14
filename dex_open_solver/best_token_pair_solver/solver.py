@@ -5,9 +5,9 @@ from copy import deepcopy
 from decimal import Decimal as D
 from functools import reduce
 
-from src.core.api import IntegerTraits, Stats, dump_solution, load_problem
-from src.core.orderbook import compute_objective, update_accounts
-from src.token_pair_solver.solver import \
+from ..core.api import IntegerTraits, Stats, dump_solution, load_problem
+from ..core.orderbook import compute_objective, update_accounts
+from ..token_pair_solver.solver import \
     solve_token_pair_and_fee_token_economic_viable
 
 logger = logging.getLogger(__name__)

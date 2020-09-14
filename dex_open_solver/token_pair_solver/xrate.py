@@ -18,7 +18,7 @@ from functools import lru_cache
 from itertools import groupby
 from math import sqrt, log, ceil
 
-from src.core.config import Config
+from ..core.config import Config
 
 from .amount import compute_buy_amounts
 from .orderbook import compute_objective_rational, prune_unrealizable_orders

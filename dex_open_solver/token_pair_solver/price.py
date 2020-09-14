@@ -1,8 +1,8 @@
 from fractions import Fraction as F
 from math import ceil, floor
 
-from src.core.config import Config
-from src.core.order import Order
+from ..core.config import Config
+from ..core.order import Order
 
 from .xrate import find_best_xrate
 

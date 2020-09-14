@@ -1,8 +1,8 @@
 """Functions for orderbooks containing 2 tokens (and optionally the fee token)."""
 from fractions import Fraction as F
 
-from src.core.config import Config
-from src.core.order_util import IntegerTraits, RationalTraits
+from ..core.config import Config
+from ..core.order_util import IntegerTraits, RationalTraits
 
 
 def compute_sell_amounts_from_buy_amounts(

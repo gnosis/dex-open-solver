@@ -3,11 +3,11 @@ from fractions import Fraction as F
 from hypothesis import event, given
 from hypothesis import strategies as s
 
-from src.core.api import Fee
-from src.core.order_util import RationalTraits
-from src.core.orderbook import count_nr_exec_orders
-from src.core.validation import validate
-from src.token_pair_solver.amount import compute_buy_amounts
+from dex_open_solver.core.api import Fee
+from dex_open_solver.core.order_util import RationalTraits
+from dex_open_solver.core.orderbook import count_nr_exec_orders
+from dex_open_solver.core.validation import validate
+from dex_open_solver.token_pair_solver.amount import compute_buy_amounts
 from tests.unit.amount_test_examples import (
     max_nr_orders_constraint_examples, min_tradable_amount_constraint_examples
 )

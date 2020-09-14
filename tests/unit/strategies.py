@@ -6,7 +6,7 @@ from typing import List, Optional
 import hypothesis.strategies as s
 from hypothesis.strategies import composite
 
-from src.core.order import Order
+from dex_open_solver.core.order import Order
 
 DEFAULT_MAX_XRATE = F(10)
 

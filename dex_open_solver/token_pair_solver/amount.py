@@ -12,7 +12,7 @@ See https://github.com/gnosis/dex-open-solver/blob/master/doc/token_pair/token_p
 """
 import logging
 
-from src.core.config import Config
+from ..core.config import Config
 
 
 logger = logging.getLogger(__name__)

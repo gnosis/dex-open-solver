@@ -2,10 +2,10 @@ from fractions import Fraction as F
 
 from hypothesis import event, given
 
-from src.core.api import Fee
-from src.core.config import Config
-from src.core.orderbook import count_nr_exec_orders
-from src.token_pair_solver.solver import (
+from dex_open_solver.core.api import Fee
+from dex_open_solver.core.config import Config
+from dex_open_solver.core.orderbook import count_nr_exec_orders
+from dex_open_solver.token_pair_solver.solver import (
     solve_token_pair_and_fee_token_economic_viable
 )
 from tests.unit.solver_test_examples import (

@@ -2,9 +2,9 @@
 """Load and setup a token pair problem from an instance json."""
 from copy import deepcopy
 
-from src.core.api import load_fee
-from src.core.order import Order
-from src.core.orderbook import restrict_order_sell_amounts_by_balances
+from ..core.api import load_fee
+from ..core.order import Order
+from ..core.orderbook import restrict_order_sell_amounts_by_balances
 
 
 def load_problem(instance, token_pair):

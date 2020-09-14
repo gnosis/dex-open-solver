@@ -1,4 +1,4 @@
-from src.core.util import classproperty
+from .util import classproperty
 
 
 class Config:

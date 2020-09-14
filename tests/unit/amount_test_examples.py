@@ -1,6 +1,6 @@
 from fractions import Fraction as F
 
-from src.core.order import Order
+from dex_open_solver.core.order import Order
 
 max_nr_orders_constraint_examples = [
     {

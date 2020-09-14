@@ -1,5 +1,5 @@
 """Asserts that solver does not take more than 1 minute to solve passed instance."""
-from src.best_token_pair_solver.solver import main
+from dex_open_solver.best_token_pair_solver.solver import main
 from argparse import Namespace
 from time import time
 

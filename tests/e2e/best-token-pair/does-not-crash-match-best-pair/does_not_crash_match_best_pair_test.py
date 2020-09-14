@@ -1,5 +1,5 @@
 """Assert that an instance should not crash the solver."""
-from src.best_token_pair_solver.solver import main
+from dex_open_solver.best_token_pair_solver.solver import main
 from argparse import Namespace
 
 

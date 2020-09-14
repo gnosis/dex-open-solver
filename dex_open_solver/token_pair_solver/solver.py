@@ -6,13 +6,13 @@ from decimal import Decimal as D
 from fractions import Fraction as F
 from math import ceil, floor
 
-from src.core.api import dump_solution, Stats
-from src.core.config import Config
-from src.core.orderbook import (compute_approx_economic_viable_subset,
-                                count_nr_exec_orders, is_economic_viable,
-                                is_trivial)
-from src.core.round import round_solution
-from src.core.validation import validate
+from ..core.api import dump_solution, Stats
+from ..core.config import Config
+from ..core.orderbook import (compute_approx_economic_viable_subset,
+                              count_nr_exec_orders, is_economic_viable,
+                              is_trivial)
+from ..core.round import round_solution
+from ..core.validation import validate
 
 from .amount import compute_buy_amounts
 from .api import load_problem
@@ -461,7 +461,7 @@ def solve_token_pair_and_fee_token_economic_viable(
         # satisfy min_abs_fee_per_order here at once, instead of removing one at a time as
         # it is currently. The advantage of removing one by one is that it will not remove
         # more than needed (note that prices, and hence order fees, keep changing).
-          
+
         # Find and remove the order paying the least fee.
         b_order_with_min_buy_amount = min(
             [o for o in b_orders if o.buy_amount > 0],

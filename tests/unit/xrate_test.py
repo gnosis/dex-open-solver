@@ -2,11 +2,11 @@ from fractions import Fraction as F
 
 from hypothesis import assume, given, settings
 
-from src.core.api import Fee
-from src.core.config import Config
-from src.token_pair_solver.amount import compute_buy_amounts
-from src.token_pair_solver.orderbook import compute_objective_rational
-from src.token_pair_solver.xrate import find_best_xrate
+from dex_open_solver.core.api import Fee
+from dex_open_solver.core.config import Config
+from dex_open_solver.token_pair_solver.amount import compute_buy_amounts
+from dex_open_solver.token_pair_solver.orderbook import compute_objective_rational
+from dex_open_solver.token_pair_solver.xrate import find_best_xrate
 from tests.unit.strategies import random_order_list
 from tests.unit.util import examples
 from tests.unit.xrate_test_examples import find_best_xrate_examples

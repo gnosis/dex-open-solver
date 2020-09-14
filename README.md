@@ -1,37 +1,58 @@
 ## Contents
 
-Contains code for finding the optimal exchange rate and buy amounts for
-a set of orders and counter-orders between two tokens.
+This package contains code for finding the optimal exchange rate and trade amounts
+for a set of orders between two tokens.
 
-## Running
+## Installing
+
+```bash
+pip install dex-open-solver
+```
+
+or
+
+```bash
+pip install git+http://github.com/gnosis/dex-open-solver#egg=dex-open-solver
+```
+
+## Using
 
 For help on all options:
 ```
-python -m src.match -h
+gp_match -h
 ```
 
-Example of matching a specific token pair:
+Matching a specific token pair:
 ```
-python -m src.match solver_greedy/data/token_pair-1-1-1.json token-pair token0 token1
+gp_match instance.json token-pair token0 token1
 ```
 
-Example of matching the token pair which leads to higher objective value:
+Matching the token pair which leads to highest objective value:
 ```
-python -m src.match solver_greedy/data/token_pair-1-1-1.json best-token-pair
+gp_match instance.json best-token-pair
+```
+
+## Developing
+
+1. Checkout the source code.
+
+```bash
+git clone git@github.com:gnosis/dex-open-solver.git
+cd dex-open-solver
+```
+
+2. Create a virtual environment (optional but recommended):
+
+```bash
+virtualenv --python=/usr/bin/python3 venv
+. venv/bin/activate
+```
+
+3. Install in development mode:
+```bash
+pip install -e .
 ```
 
 ## Algorithm
 
 See [here](doc/token_pair/token_pair.pdf).
-
-## Validating results
-
-To validate results, the NLP solver must be used (from dex-solver):
-
-Example:
-```
-python -m scripts.e2e._run --optModel nlp --jsonFile ../dex-local-sover/data/token_pair-1-1-1.json results/
-```
-
-For convenience, all instances in `data/` already include the prices and traded amounts
-obtained with the NLP solver.

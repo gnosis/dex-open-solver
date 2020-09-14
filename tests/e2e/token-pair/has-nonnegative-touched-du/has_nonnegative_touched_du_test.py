@@ -1,5 +1,5 @@
 """Assert that an instance has a nonnegative touched disregarded utility."""
-from src.token_pair_solver.solver import main
+from dex_open_solver.token_pair_solver.solver import main
 from argparse import Namespace
 
 

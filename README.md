@@ -6,13 +6,13 @@ for a set of orders between two tokens.
 ## Installing
 
 ```bash
-pip install dex-open-solver
+pip install dex-open-solver_gnosis
 ```
 
 or
 
 ```bash
-pip install git+http://github.com/gnosis/dex-open-solver#egg=dex-open-solver
+pip install git+http://github.com/gnosis/dex-open-solver#egg=dex-open-solver_gnosis
 ```
 
 ## Using

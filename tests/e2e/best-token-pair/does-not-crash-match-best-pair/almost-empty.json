@@ -1,0 +1,32 @@
+{
+    "tokens": {
+        "token0": {
+            "alias": "xOWL",
+            "decimals": 18,
+            "externalPrice": 1000000000000000000
+        },
+        "token1": {
+            "alias": "WETH",
+            "decimals": 18,
+            "externalPrice": 364824379536650403840
+        }
+    },
+    "refToken": "token0",
+    "accounts": {
+        "0xe0b3700e0aadcb18ed8d4bff648bc99896a18ad1": {}
+    },
+    "orders": [
+        {
+            "accountID": "0xe0b3700e0aadcb18ed8d4bff648bc99896a18ad1",
+            "sellToken": "token1",
+            "buyToken": "token0",
+            "sellAmount": "1000000",
+            "buyAmount": "900000000000000000",
+            "orderID": 0
+        }
+    ],
+    "fee": {
+        "token": "token0",
+        "ratio": 0.001
+    }
+}

@@ -72,7 +72,7 @@ def eligible_token_pairs(orders, fee_token):
     }
 
     # A set with all tokens.
-    all_tokens = reduce(lambda x, y: x | y, (o.tokens for o in orders))
+    all_tokens = reduce(lambda x, y: x | y, (o.tokens for o in orders), set())
 
     # All permutations that do not include fee, and where the first
     # token in the token pair is directly connected to fee.

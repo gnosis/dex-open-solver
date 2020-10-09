@@ -1,5 +1,6 @@
 import logging
 from fractions import Fraction as F
+from functools import cmp_to_key
 from typing import Dict, List, Tuple
 
 from .config import Config
@@ -7,6 +8,20 @@ from .order import Order
 from .order_util import IntegerTraits
 
 logger = logging.getLogger(__name__)
+
+
+def sorted_orders_by_exec_priority(orders):
+    """Sorts orders by decreasing xrate, breaking ties with larger orders first,
+    breaking ties with order id.
+    """
+    def order_cmp(o1, o2):
+        if o1.max_xrate != o2.max_xrate:
+            return o2.max_xrate - o1.max_xrate
+        if o1.max_sell_amount != o2.max_sell_amount:
+            return o2.max_sell_amount - o1.max_sell_amount
+        return -1 if o1.id < o2.id else 1
+
+    return sorted(orders, key=cmp_to_key(order_cmp))
 
 
 def compute_solution_metrics(prices, accounts_updated, orders, fee):
@@ -122,7 +137,7 @@ def restrict_order_sell_amounts_by_balances(
     remaining_balances = {}
 
     # Iterate over orders sorted by limit price (best -> worse).
-    for order in sorted(orders, key=lambda o: o.max_xrate, reverse=True):
+    for order in sorted_orders_by_exec_priority(orders):
         aID, tS, tB = order.account_id, order.sell_token, order.buy_token
 
         # Init remaining balance for new token pair on some account.

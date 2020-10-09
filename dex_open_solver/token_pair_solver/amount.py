@@ -13,6 +13,7 @@ See https://github.com/gnosis/dex-open-solver/blob/master/doc/token_pair/token_p
 import logging
 
 from ..core.config import Config
+from ..core.orderbook import sorted_orders_by_exec_priority
 
 
 logger = logging.getLogger(__name__)
@@ -340,8 +341,8 @@ def compute_buy_amounts(
         return
 
     # Sort orders by optimal execution order.
-    b_orders = sorted(b_orders, key=lambda o: o.max_xrate, reverse=True)
-    s_orders = sorted(s_orders, key=lambda o: o.max_xrate, reverse=True)
+    b_orders = sorted_orders_by_exec_priority(b_orders)
+    s_orders = sorted_orders_by_exec_priority(s_orders)
 
     # Execute matching orders, bounded by the max_nr_exec_orders constraint:
     b_i = 0

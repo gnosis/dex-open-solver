@@ -6,14 +6,13 @@ from decimal import Decimal as D
 from fractions import Fraction as F
 from math import ceil, floor
 
-from ..core.api import dump_solution, Stats
+from ..core.api import Stats, dump_solution
 from ..core.config import Config
 from ..core.orderbook import (compute_approx_economic_viable_subset,
                               count_nr_exec_orders, is_economic_viable,
-                              is_trivial)
+                              is_trivial, sorted_orders_by_exec_priority)
 from ..core.round import round_solution
 from ..core.validation import validate
-
 from .amount import compute_buy_amounts
 from .api import load_problem
 from .orderbook import (IntegerTraits, RationalTraits, aggregate_orders_prices,
@@ -335,7 +334,7 @@ def solve_token_pair_and_fee_token(
         )
 
         # Find number of f_orders that leads to higher objective value.
-        f_orders = sorted(f_orders, key=lambda f_order: f_order.max_xrate, reverse=True)
+        f_orders = sorted_orders_by_exec_priority(f_orders)
         best_objective = None
         best_solution = (xrate, None, b_orders, s_orders, f_orders)
         for nr_exec_f_orders in range(min_nr_exec_f_orders, max_nr_exec_f_orders + 1):

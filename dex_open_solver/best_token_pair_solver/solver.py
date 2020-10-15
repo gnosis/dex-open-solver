@@ -51,7 +51,11 @@ def match_token_pair(token_pair, accounts, orders, fee):
     return (orders, prices)
 
 
-def match_token_pair_and_evaluate(token_pair, accounts, orders, fee):
+def match_token_pair_and_evaluate(
+    token_pair, accounts, orders, fee, touched_only=False
+):
+    """If touched_only=true, then evaluate objective over touched orders only."""
+
     # Compute current token pair solution: buy/sell amounts and best prices.
     orders, prices = match_token_pair(token_pair, accounts, orders, fee)
 
@@ -60,7 +64,11 @@ def match_token_pair_and_evaluate(token_pair, accounts, orders, fee):
     update_accounts(accounts_updated, orders)
 
     # Compute objective value for current token pair solution.
-    objective = compute_objective(prices, accounts_updated, orders, fee)
+    if touched_only:
+        touched_orders = [o for o in orders if o.buy_amount > 0]
+        objective = compute_objective(prices, accounts_updated, touched_orders, fee)
+    else:
+        objective = compute_objective(prices, accounts_updated, orders, fee)
 
     return (objective, (orders, prices))
 
@@ -100,7 +108,7 @@ def main(args):
     best_solution = TRIVIAL_SOLUTION
     for token_pair in eligible_token_pairs(orders, fee.token):
         objective, solution = match_token_pair_and_evaluate(
-            token_pair, accounts, orders, fee
+            token_pair, accounts, orders, fee, touched_only=True
         )
         if best_objective is None or objective > best_objective:
             best_objective = objective

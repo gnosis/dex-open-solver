@@ -82,7 +82,7 @@ def setup_rounding_buffer(
         old_max_sell_amount = o.max_sell_amount
         new_max_sell_amount = max(old_max_sell_amount - rounding_buffer, 0)
 
-        logging.info(
+        logging.debug(
             "Reducing max sell amount [%s] of order <%s> : %25d --> %25d",
             tS, o.id, old_max_sell_amount, new_max_sell_amount
         )

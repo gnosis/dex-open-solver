@@ -267,15 +267,9 @@ def compute_connected_tokens(orders, fee_token):
 
 def compute_total_fee(orders, prices, fee, arith_traits):
     """Compute total fee in the solution."""
-    sold_fee = sum(
-        order.get_sell_amount_from_buy_amount(prices, fee, arith_traits)
-        for order in orders if order.sell_token == fee.token
+    return sum(
+        o.fee(prices, fee) for o in orders
     )
-    bought_fee = sum(
-        order.buy_amount
-        for order in orders if order.buy_token == fee.token
-    )
-    return sold_fee - bought_fee
 
 
 def compute_average_order_fee(orders, prices, fee, arith_traits):
@@ -339,13 +333,13 @@ def compute_approx_economic_viable_subset(orders, prices, fee, arith_traits):
     )
 
     i = 1
-    while i < len(orders) and \
+    while i < len(orders_by_dec_volume) and \
         compute_average_order_fee(
         orders_by_dec_volume[:i], prices, fee, arith_traits
     ) >= Config.MIN_AVERAGE_ORDER_FEE:
         i += 1
 
-    orders = orders[:i]
+    orders = orders_by_dec_volume[:i]
 
     # If there are only buy orders or only sell orders in the subset then
     # the subset can be further reduced to the trivial solution.

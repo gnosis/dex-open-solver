@@ -174,5 +174,5 @@ class Order(object):
         return self.buy_amount * prices[self.buy_token]
 
     def fee(self, prices, fee):
-        """Compute order fees."""
-        return self.volume(prices) * fee.value
+        """Compute order fees, in fee tokens."""
+        return self.volume(prices) * fee.value / Config.FEE_TOKEN_PRICE

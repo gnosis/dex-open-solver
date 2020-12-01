@@ -4,6 +4,7 @@ import time
 from copy import deepcopy
 from decimal import Decimal as D
 from functools import reduce
+from random import shuffle
 
 from ..core.api import IntegerTraits, Stats, dump_solution, load_problem
 from ..core.orderbook import compute_objective, update_accounts
@@ -106,13 +107,24 @@ def main(args):
     # TODO: parallelize this loop.
     best_objective = 0
     best_solution = TRIVIAL_SOLUTION
-    for token_pair in eligible_token_pairs(orders, fee.token):
+
+    # Shuffle token pairs so that the open solver has a chance
+    # to solve an instance in consecutive batches in the
+    # case the timeout is limiting each run to complete.
+    token_pairs = list(eligible_token_pairs(orders, fee.token))
+    shuffle(token_pairs)
+    for token_pair in token_pairs:
         objective, solution = match_token_pair_and_evaluate(
             token_pair, accounts, orders, fee, touched_only=True
         )
         if best_objective is None or objective > best_objective:
             best_objective = objective
             best_solution = deepcopy(solution)
+        if hasattr(args, 'time_limit') and \
+           args.time_limit is not None and \
+           args.time_limit < time.time() - start_time:
+            logging.warning("Time limit reached - leaving.")
+            break
 
     orders, prices = best_solution
 

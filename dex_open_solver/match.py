@@ -55,6 +55,13 @@ def main():
         "fee token) on an admissible solution."
     )
 
+    parser.add_argument(
+        '--time-limit',
+        default=None,
+        type=int,
+        help="Maximum time for solving, in seconds."
+    )
+
     subparsers = parser.add_subparsers(
         title='subcommand',
         description="valid subcommands",

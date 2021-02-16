@@ -227,6 +227,7 @@ def solve_token_pair_and_fee_token_given_exec_f_orders(
     logger.debug("=== (Re)solving %s -- %s ===", b_buy_token, s_buy_token)
     logger.debug("\tWith price for %s\t:\t%s", b_buy_token, b_buy_token_price)
     logger.debug("\tWith maximum nr bs orders\t:\t%s", max_nr_bs_exec_orders)
+    logger.debug("\tWith nr f orders\t:\t%s", nr_exec_f_orders)
 
     # Execute orders with slightly decreased max_sell_amounts so that later on
     # is possible to round solution without violating the max sell amount constraint.
@@ -338,6 +339,12 @@ def solve_token_pair_and_fee_token(
         best_objective = None
         best_solution = (xrate, None, b_orders, s_orders, f_orders)
         for nr_exec_f_orders in range(min_nr_exec_f_orders, max_nr_exec_f_orders + 1):
+
+            # Reset exec amounts of f orders.
+            for f_order in f_orders:
+                f_order.buy_amount = 0
+                f_order.sell_amount = 0
+
             # Compute objective value and solution given current nr_exec_f_orders.
             objective, adjusted_xrate, b_buy_token_price = \
                 solve_token_pair_and_fee_token_given_exec_f_orders(
